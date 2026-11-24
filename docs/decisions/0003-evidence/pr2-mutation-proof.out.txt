@@ -1,0 +1,9 @@
+M1 whitespace limit comparison: failed test=tests/test_checks_pure.py::test_desc_008_run_length_boundary red=yes restored=yes pytest_last=1 failed in 0.56s
+M2 DESC-003 WARN instead of FAIL: failed test=tests/test_runner.py::test_bad_duplicate_names_fails_desc_003 red=yes restored=yes pytest_last=1 failed in 0.63s
+M3 skip evidence redaction: failed test=tests/test_runner.py::test_evidence_redacts_extra_env_value red=yes restored=yes pytest_last=1 failed in 0.63s
+M4 START-001 failure returns remaining PASS: failed test=tests/test_runner.py::test_startup_exit_fails_start_001_and_everything_else_is_not_tested red=yes restored=yes pytest_last=1 failed in 0.54s
+M5 START-005 always PASS: failed test=tests/test_runner.py::test_server_that_ignores_stdin_close_warns_start_005_and_is_killed red=yes restored=yes pytest_last=1 failed in 0.79s
+M6 DESC-007 ignore Cf: failed test=tests/test_runner.py::test_bad_hidden_characters_warns_desc_007 red=yes restored=yes pytest_last=1 failed in 0.59s
+M7 tools collector reads only first page: failed test=tests/test_runner.py::test_paginated_tools_are_collected_and_flag_page_two_tool red=yes restored=yes pytest_last=1 failed in 0.56s
+ALL LOCAL MUTATIONS PROVEN
+M5 Windows CI: run=https://github.com/sarooo43/mcp-caretaker/actions/runs/45473623295 job_windows_3_11=https://github.com/sarooo43/mcp-caretaker/actions/runs/45473623295/job/138727896223 conclusion=failure short_log=FAILED tests/test_runner.py::test_server_that_ignores_stdin_close_warns_start_005_and_is_killed
