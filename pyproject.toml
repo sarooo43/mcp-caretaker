@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Saboor Nasar" }]
-dependencies = ["mcp==2.3.0"]
+dependencies = ["mcp==2.3.0", "mcp-types==2.3.0"]
 
 [project.optional-dependencies]
 dev = [

@@ -17,7 +17,9 @@ def build_parser() -> argparse.ArgumentParser:
         prog="mcp-caretaker",
         description="Runtime behaviour tester for local MCP servers (pre-release, nothing usable yet).",
     )
-    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__version__}"
+    )
     return parser
 
 
