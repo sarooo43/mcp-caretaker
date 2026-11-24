@@ -1,0 +1,7 @@
+no_description returned tools= 1 names= ['a'] lost= ['unknownField'] added= ['_meta', 'annotations', 'description', 'execution', 'icons', 'outputSchema', 'title']
+no_description first= {"_meta": null, "annotations": null, "description": null, "execution": null, "icons": null, "inputSchema": {"properties": {}, "type": "object"}, "name": "a", "outputSchema": null, "title": null}
+no_inputSchema raises ExceptionGroup>ExceptionGroup>ValidationError: 1 validation error for ListToolsResult | tools.0.inputSchema |   Field required [type=missing, input_value={'name': 'b', 'descriptio....', 'unknownField': 'x'}, input_type=dict]
+string_schema raises ExceptionGroup>ExceptionGroup>ValidationError: 1 validation error for ListToolsResult | tools.0.inputSchema.type |   Input should be 'object' [type=literal_error, input_value='string', input_type=str]
+duplicate_names returned tools= 2 names= ['dup', 'dup'] lost= ['unknownField'] added= ['_meta', 'annotations', 'execution', 'icons', 'outputSchema', 'title']
+duplicate_names first= {"_meta": null, "annotations": null, "description": "A clear description.", "execution": null, "icons": null, "inputSchema": {"properties": {}, "type": "object"}, "name": "dup", "outputSchema": null, "title": null}
+non_string_description raises ExceptionGroup>ExceptionGroup>ValidationError: 1 validation error for ListToolsResult | tools.0.description |   Input should be a valid string [type=string_type, input_value=123, input_type=int]

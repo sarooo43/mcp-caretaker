@@ -13,6 +13,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .thresholds import SHUTDOWN_GRACE_SECONDS
+
 # Shorter values would redact harmless common substrings ("1", "a", "/tmp"), so
 # the redactor deliberately ignores them. Documented in docs/decisions/0002.
 REDACTION_MIN_LENGTH = 4
@@ -26,6 +28,7 @@ class LaunchSpec:
     extra_env: Mapping[str, str] = field(default_factory=dict)
     startup_timeout: float = 30.0
     call_timeout: float = 10.0
+    shutdown_grace: float = SHUTDOWN_GRACE_SECONDS
 
     def __post_init__(self) -> None:
         if isinstance(self.argv, str) or not isinstance(self.argv, tuple):
@@ -41,13 +44,16 @@ class LaunchSpec:
             raise ValueError("startup_timeout must be positive")
         if self.call_timeout <= 0:
             raise ValueError("call_timeout must be positive")
+        if self.shutdown_grace <= 0:
+            raise ValueError("shutdown_grace must be positive")
 
     def __repr__(self) -> str:
         text = (
             f"LaunchSpec(argv={self.argv!r}, "
             f"extra_env_names={sorted(self.extra_env)!r}, "
             f"startup_timeout={self.startup_timeout!r}, "
-            f"call_timeout={self.call_timeout!r})"
+            f"call_timeout={self.call_timeout!r}, "
+            f"shutdown_grace={self.shutdown_grace!r})"
         )
         return redact_values(text, self.extra_env)
 
