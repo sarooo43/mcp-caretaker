@@ -129,3 +129,22 @@ grep -RInE "TODO|FIXME|NotImplemented" src tests examples docs README.md pyproje
 9. `tests/test_canary_runner.py:27: unused function 'fixed_canary' (60% confidence)` — false positive; pytest discovers this autouse fixture.
 
 Reused helpers: `redact_values`, `visible_text`, `finalize_run_result`, `replay_line`, `_error_text`, `remove_temp_area`, `collect_tools_pages`, `_BridgeTap.inspect_line`, `clean_tool`, `tool_result`, `serve`, `tools_list_replay`, `error_evidence`, and `compare_lists`. No new runtime dependency, development dependency, CI step, helper script, or output file was added for the unused-code review.
+
+## T8 mutation proof
+
+Local mutations were applied one at a time to committed files. Each ran the named pytest node or nodes, saw a red result, restored the exact original text, saw a green result, and left `git diff --quiet` empty. No mutation helper script or output file was stored in the repository.
+
+| ID | Changed file and mutation | Named pytest node or nodes | Red | Restored | Diff empty |
+| --- | --- | --- | --- | --- | --- |
+| M1 | `runner.py`: no planted environment values | `test_bad_canary_leaks_modes[result-text-fails-canary-001]` | `1 failed in 0.63s` | `1 passed in 0.68s` | YES |
+| M2 | `canary.py`: skip standard base64 form | `test_bad_canary_leaks_modes[base64-result-fails-canary-001]` | `1 failed in 0.67s` | `1 passed in 0.67s` | YES |
+| M3 | `canary.py`: CANARY-001 ignores `MCPError` | `test_bad_canary_leaks_modes[rpc-error-fails-canary-001]` | `1 failed in 1.30s` | `1 passed in 1.27s` | YES |
+| M4 | `canary.py`: CANARY-003 uses `FAIL` instead of `WARN` | `test_bad_canary_leaks_modes[stderr-warns-canary-003]` | `1 failed in 0.81s` | `1 passed in 0.72s` | YES |
+| M5 | `runner.py`: second session uses a fresh temp folder | `test_bad_rug_pull_modes[reconnect-description-fails-stab-001]` | `1 failed in 0.72s` | `1 passed in 0.79s` | YES |
+| M6 | `stability.py`: ignore annotations | `test_bad_rug_pull_modes[after-calls-annotation-fails-stab-002]` | `1 failed in 0.70s` | `1 passed in 0.71s` | YES |
+| M7 | `canary.py`: leak evidence skips redaction | `test_bad_canary_leaks_modes[result-text-fails-canary-001]` | `1 failed in 0.65s` | `1 passed in 0.67s` | YES |
+| M8 | `stability.py`: added or removed tools count as PASS | `added-tool-warns-stab-002`, `removed-tool-warns-stab-002` | `2 failed in 0.82s` | `2 passed in 0.80s` | YES |
+
+M5 remote proof used the throwaway branch `mutation/pr4-m5-windows`, mutation commit `af7f36eefb7ea3cb4a2eae993366e31ead9523c9`, parent commit `1bd6fda7ddcb25afd8a3e2646a862e3fec263994`, and `workflow_dispatch` run `https://github.com/sarooo43/mcp-caretaker/actions/runs/45510363563`. The run conclusion was `failure`. Per-job results were: ubuntu 3.11 job `138856236610` `failure`; windows 3.11 job `138856236863` `failure`; windows 3.13 job `138856237091` `failure`; ubuntu 3.13 job `138856237264` `failure`. The Windows 3.11 signed log showed `2 failed, 129 passed in 52.37s`, including CT-STAB-001 returning PASS when fresh folders hid the reconnect change. The branch was deleted and no pull request was opened from it.
+
+The mutation commit differs from the final head in `docs/decisions/0005-canary-and-stability.md` and `src/mcp_caretaker/runner.py`. The final head includes this proof text and the restored shared-folder code; the mutation commit contains the fresh-folder code and lacks the appended proof text. No canary value, base64 form, helper script, or output file was stored for the mutation proof.
