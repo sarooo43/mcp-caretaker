@@ -1,0 +1,11 @@
+os Debian GNU/Linux 12 (bookworm)
+kernel 6.1.158+
+python 3.11.2
+branch arena/b946922e-mcp-caretaker
+main_sha f2a605e14de28ccc1b5bf4ee3e076b23f63b87c6
+main_tree 5049132b2d5b83d4cd47afff98e12620157e961b
+pr2_head_tree 5049132b2d5b83d4cd47afff98e12620157e961b
+tree_equal True
+pr2_state MERGED
+pr2_merge_commit f2a605e14de28ccc1b5bf4ee3e076b23f63b87c6
+pr2_head 90fac066475aec153786c0973e791b18879cbc45

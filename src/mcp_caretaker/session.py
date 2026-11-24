@@ -218,6 +218,7 @@ class ServerSession:
         self.initialize_result: Any = None
         self.exit_code: int | None = None
         self.exited_by_itself: bool | None = None
+        self.exited_before_shutdown: bool = False
 
         self._tap = _BridgeTap()
         self._temp_area: Path | None = None
@@ -415,9 +416,18 @@ class ServerSession:
                 await anyio.sleep(0.01)
         return self._process.returncode
 
+    async def _raise_dead_child(self, exc: BaseException) -> None:
+        code = await self._wait_for_exit(0.2)
+        if code is not None:
+            raise ServerExited(code, self._read_stderr_tail()) from exc
+
     async def list_tools(self, *, params: Any | None = None) -> Any:
         """Return the SDK's ``ListToolsResult`` unchanged. ``params`` may hold a cursor."""
-        return await self._require_client().list_tools(params=params)
+        try:
+            return await self._require_client().list_tools(params=params)
+        except MCPError as exc:
+            await self._raise_dead_child(exc)
+            raise
 
     async def collect_tools_pages(
         self,
@@ -489,6 +499,9 @@ class ServerSession:
             raise CallTimeout(
                 self._safe(f"tools/call {name!r} exceeded {effective} seconds")
             ) from exc
+        except MCPError as exc:
+            await self._raise_dead_child(exc)
+            raise
 
     def _require_client(self) -> ClientSession:
         if self._client is None or self._cleaned:
@@ -565,6 +578,8 @@ class ServerSession:
             raise stop_error
 
     async def _stop_process_tree(self, process: Any) -> None:
+        already_exited = process.returncode is not None
+        self.exited_before_shutdown = already_exited
         self.exited_by_itself = None
         # Closing stdin gives a well-behaved server a chance to exit on its own.
         with suppress(Exception):
@@ -572,7 +587,8 @@ class ServerSession:
         with anyio.move_on_after(self.spec.shutdown_grace):
             while process.returncode is None:
                 await anyio.sleep(0.01)
-        self.exited_by_itself = process.returncode is not None
+        if not already_exited:
+            self.exited_by_itself = process.returncode is not None
 
         if sys.platform == "win32":
             _, terminate, close = windows_helpers()

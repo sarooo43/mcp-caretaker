@@ -1,4 +1,4 @@
-"""One library runner for the first two check groups. No printing, no files."""
+"""One library runner for the three check groups. No printing, no files."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import anyio
 from . import __version__
 from .checks import CHECK_BY_ID, CHECKS
 from .checks.description import DESCRIPTION_CHECK_FUNCTIONS
+from .checks.robustness import ROBUSTNESS_IDS, run_robustness_checks
 from .checks.startup import STARTUP_CHECK_FUNCTIONS, StartupContext
 from .launch import LaunchSpec
 from .model import (
@@ -65,7 +66,7 @@ def _init_fields(session: ServerSession) -> tuple[str | None, str | None, str | 
 
 
 async def run_checks(spec: LaunchSpec, *, confirmed: bool) -> RunResult:
-    """Run all 14 checks against one confirmed local server and return one result each."""
+    """Run all 20 checks against one confirmed local server and return one result each."""
     session = ServerSession(spec, confirmed=confirmed)
     results_by_id: dict[str, CheckResult] = {
         item.id: _not_tested(item.id, "check did not run") for item in CHECKS
@@ -148,6 +149,25 @@ async def run_checks(spec: LaunchSpec, *, confirmed: bool) -> RunResult:
                     results_by_id[check_id] = _not_tested(check_id, "tools/list failed")
                 else:
                     results_by_id[check_id] = _run_one(check_id, function, raw_tools)
+            if failed or tools_error is not None:
+                for check_id in ROBUSTNESS_IDS:
+                    results_by_id[check_id] = _not_tested(check_id, "tools/list failed")
+            else:
+                try:
+                    results_by_id.update(
+                        await run_robustness_checks(session, raw_tools, spec.extra_env)
+                    )
+                except BaseException as exc:
+                    if _is_cancelled(exc):
+                        raise
+                    reason = f"internal error in robustness checks: {_error_text(exc)}"
+                    for check_id in ROBUSTNESS_IDS:
+                        results_by_id[check_id] = _not_tested(check_id, reason)
+            ctx = replace(
+                ctx,
+                stdout_noise_count=session.stdout_noise_count,
+                stdout_noise=tuple(session.stdout_noise),
+            )
             results_by_id["CT-START-004"] = _run_one(
                 "CT-START-004",
                 STARTUP_CHECK_FUNCTIONS["CT-START-004"],
@@ -165,7 +185,11 @@ async def run_checks(spec: LaunchSpec, *, confirmed: bool) -> RunResult:
                     raise
                 exit_error = exc
 
-        ctx = replace(ctx, exited_by_itself=session.exited_by_itself)
+        ctx = replace(
+            ctx,
+            exited_by_itself=session.exited_by_itself,
+            exited_before_shutdown=session.exited_before_shutdown,
+        )
         results_by_id["CT-START-005"] = _run_one(
             "CT-START-005",
             STARTUP_CHECK_FUNCTIONS["CT-START-005"],

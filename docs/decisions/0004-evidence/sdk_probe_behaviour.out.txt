@@ -1,0 +1,13 @@
+tools_list_error None
+tools 6 annotations {"readOnlyHint": true}
+key_path annotations.readOnlyHint exact_true True
+inputSchema {"properties": {"text": {"title": "Text", "type": "string"}}, "required": ["text"], "title": "echoArguments", "type": "object"}
+huge_roundtrip_chars 1048576 elapsed 0.08
+wrong echo is_error True coerced_to_success False
+wrong integer_tool is_error True coerced_to_success False
+wrong number_tool is_error True coerced_to_success False
+wrong boolean_tool is_error True coerced_to_success False
+wrong array_tool is_error True coerced_to_success False
+wrong object_tool is_error True coerced_to_success False
+sdk_unknown_tool CallToolResult is_error True text Unknown tool: caretaker_no_such_tool
+raw_unknown_tool MCPError code -32602 message Unknown tool: caretaker_no_such_tool

@@ -35,17 +35,17 @@ def _by_id(run: RunResult) -> dict[str, object]:
 
 
 @pytest.mark.anyio
-async def test_clean_server_passes_all_14_checks() -> None:
+async def test_clean_server_passes_all_checks() -> None:
     run = await run_checks(_spec("clean_server.py", shutdown_grace=5.0), confirmed=True)
-    assert len(run.results) == 14
-    assert [result.verdict for result in run.results] == [Verdict.PASS] * 14
+    assert len(run.results) == 20
+    assert [result.verdict for result in run.results] == [Verdict.PASS] * 20
 
 
 @pytest.mark.anyio
 async def test_runner_results_are_ordered_and_have_one_result_per_id() -> None:
     run = await run_checks(_spec("bad_duplicate_names.py"), confirmed=True)
     assert [result.check_id for result in run.results] == list(CHECK_IDS)
-    assert len({result.check_id for result in run.results}) == 14
+    assert len({result.check_id for result in run.results}) == 20
     assert all(
         result.title == CHECK_BY_ID[result.check_id].title for result in run.results
     )
@@ -67,7 +67,7 @@ async def test_negotiated_protocol_version_is_in_run_result_and_start_002_eviden
 
 
 @pytest.mark.anyio
-async def test_empty_handshake_warns_start_002_and_keeps_protocol_version() -> None:
+async def test_no_server_info_warns_start_002() -> None:
     run = await run_checks(_spec("bad_empty_handshake.py"), confirmed=True)
     assert run.protocol_version
     assert _by_id(run)["CT-START-002"].verdict is Verdict.WARN
@@ -76,7 +76,7 @@ async def test_empty_handshake_warns_start_002_and_keeps_protocol_version() -> N
 
 
 @pytest.mark.anyio
-async def test_confirmation_required_propagates_before_spawn(tmp_path) -> None:
+async def test_unconfirmed_run_raises_before_spawn(tmp_path) -> None:
     marker = tmp_path / "marker.txt"
     code = "import pathlib, sys; pathlib.Path(sys.argv[1]).write_text('ran')"
     spec = LaunchSpec(argv=(sys.executable, "-c", code, str(marker)))
@@ -106,7 +106,7 @@ async def test_no_argv_in_run_result() -> None:
 
 
 @pytest.mark.anyio
-async def test_crashing_check_is_not_tested_with_reason_and_others_still_run(
+async def test_crashing_check_becomes_not_tested_and_others_still_run(
     monkeypatch,
 ) -> None:
     fake = "FAKE-CRASH-VALUE-1234"
@@ -147,7 +147,7 @@ async def test_startup_exit_fails_start_001_and_everything_else_is_not_tested() 
         for item in by_id["CT-START-001"].evidence
     )
     others = [result for result in run.results if result.check_id != "CT-START-001"]
-    assert len(others) == 13
+    assert len(others) == 19
     assert all(
         result.verdict is Verdict.NOT_TESTED and result.reason for result in others
     )
@@ -155,7 +155,7 @@ async def test_startup_exit_fails_start_001_and_everything_else_is_not_tested() 
 
 
 @pytest.mark.anyio
-async def test_startup_hang_fails_start_001_and_everything_else_is_not_tested() -> None:
+async def test_startup_hang_fails_start_001() -> None:
     run = await run_checks(
         _spec("bad_hangs_on_startup.py", startup_timeout=1.0, shutdown_grace=0.2),
         confirmed=True,
@@ -163,7 +163,7 @@ async def test_startup_hang_fails_start_001_and_everything_else_is_not_tested() 
     by_id = _by_id(run)
     assert by_id["CT-START-001"].verdict is Verdict.FAIL
     others = [result for result in run.results if result.check_id != "CT-START-001"]
-    assert len(others) == 13
+    assert len(others) == 19
     assert all(
         result.verdict is Verdict.NOT_TESTED and result.reason for result in others
     )
@@ -191,7 +191,7 @@ async def test_bad_hidden_characters_warns_desc_007() -> None:
 
 
 @pytest.mark.anyio
-async def test_paginated_tools_are_collected_and_flag_page_two_tool() -> None:
+async def test_pagination_collects_all_pages_and_flags_page_two_tool() -> None:
     run = await run_checks(_spec("paginated_server.py"), confirmed=True)
     by_id = _by_id(run)
     assert by_id["CT-START-003"].verdict is Verdict.PASS
@@ -202,32 +202,70 @@ async def test_paginated_tools_are_collected_and_flag_page_two_tool() -> None:
 
 
 @pytest.mark.anyio
-async def test_bad_descriptions_warn_or_fail_expected_description_checks() -> None:
-    run = await run_checks(_spec("bad_descriptions.py"), confirmed=True)
-    by_id = _by_id(run)
-    expected = {
-        "CT-DESC-001": Verdict.WARN,
-        "CT-DESC-002": Verdict.WARN,
-        "CT-DESC-003": Verdict.FAIL,
-        "CT-DESC-004": Verdict.FAIL,
-        "CT-DESC-005": Verdict.WARN,
-        "CT-DESC-006": Verdict.WARN,
-        "CT-DESC-007": Verdict.WARN,
-        "CT-DESC-008": Verdict.WARN,
-        "CT-DESC-009": Verdict.WARN,
-    }
-    assert {check_id: by_id[check_id].verdict for check_id in expected} == expected
+async def test_zero_tools_warns_start_003() -> None:
+    run = await run_checks(
+        _spec(
+            "bad_tools_list_error.py",
+            extra_env={"CARETAKER_TEST_ZERO_TOOLS": "1"},
+        ),
+        confirmed=True,
+    )
+    result = _by_id(run)["CT-START-003"]
+    assert result.verdict is Verdict.WARN
+    assert "0 tools" in result.summary
 
 
 @pytest.mark.anyio
-async def test_tools_list_error_fails_start_003_and_desc_checks_are_not_tested() -> (
-    None
-):
+async def test_bad_no_descriptions_warns_desc_001() -> None:
+    run = await run_checks(_spec("bad_no_descriptions.py"), confirmed=True)
+    assert _by_id(run)["CT-DESC-001"].verdict is Verdict.WARN
+
+
+@pytest.mark.anyio
+async def test_bad_description_length_warns_desc_002() -> None:
+    run = await run_checks(_spec("bad_description_length.py"), confirmed=True)
+    assert _by_id(run)["CT-DESC-002"].verdict is Verdict.WARN
+
+
+@pytest.mark.anyio
+async def test_bad_schema_fails_desc_004() -> None:
+    run = await run_checks(_spec("bad_schema_not_object.py"), confirmed=True)
+    assert _by_id(run)["CT-DESC-004"].verdict is Verdict.FAIL
+
+
+@pytest.mark.anyio
+async def test_bad_missing_types_warns_desc_005() -> None:
+    run = await run_checks(_spec("bad_missing_types.py"), confirmed=True)
+    assert _by_id(run)["CT-DESC-005"].verdict is Verdict.WARN
+
+
+@pytest.mark.anyio
+async def test_bad_missing_property_descriptions_warns_desc_006() -> None:
+    run = await run_checks(
+        _spec("bad_missing_property_descriptions.py"), confirmed=True
+    )
+    assert _by_id(run)["CT-DESC-006"].verdict is Verdict.WARN
+
+
+@pytest.mark.anyio
+async def test_bad_whitespace_run_warns_desc_008() -> None:
+    run = await run_checks(_spec("bad_whitespace_run.py"), confirmed=True)
+    assert _by_id(run)["CT-DESC-008"].verdict is Verdict.WARN
+
+
+@pytest.mark.anyio
+async def test_bad_tool_name_format_warns_desc_009() -> None:
+    run = await run_checks(_spec("bad_tool_name_format.py"), confirmed=True)
+    assert _by_id(run)["CT-DESC-009"].verdict is Verdict.WARN
+
+
+@pytest.mark.anyio
+async def test_tools_list_error_fails_start_003_and_desc_checks_not_tested() -> None:
     run = await run_checks(_spec("bad_tools_list_error.py"), confirmed=True)
     by_id = _by_id(run)
     assert by_id["CT-START-003"].verdict is Verdict.FAIL
     for check_id in CHECK_IDS:
-        if check_id.startswith("CT-DESC-"):
+        if check_id.startswith(("CT-DESC-", "CT-ROB-")):
             assert by_id[check_id].verdict is Verdict.NOT_TESTED
             assert by_id[check_id].reason == "tools/list failed"
     assert by_id["CT-START-001"].verdict is Verdict.PASS
@@ -244,7 +282,7 @@ async def test_tools_list_page_cap_warns_start_003() -> None:
 
 
 @pytest.mark.anyio
-async def test_leaky_stdout_warns_start_004_and_cap_is_bounded() -> None:
+async def test_stdout_noise_start_004() -> None:
     fake = "FAKE-LEAK-VALUE-123456"
     run = await run_checks(
         _spec("leaky_stdout.py", extra_env={"CARETAKER_FAKE_TEXT": fake}),
@@ -303,3 +341,20 @@ async def test_server_that_ignores_stdin_close_warns_start_005_and_is_killed(
             return True
 
     assert await wait_until(gone, timeout=5.0)
+
+
+@pytest.mark.anyio
+async def test_start_005_is_not_tested_when_server_exited_before_shutdown() -> None:
+    run = await run_checks(
+        _spec(
+            "bad_dies_after_probes.py",
+            extra_env={"CARETAKER_TEST_MODE": "list"},
+            startup_timeout=2,
+            call_timeout=2,
+            shutdown_grace=2,
+        ),
+        confirmed=True,
+    )
+    result = _by_id(run)["CT-START-005"]
+    assert result.verdict is Verdict.NOT_TESTED
+    assert result.reason == "server had already exited before shutdown"

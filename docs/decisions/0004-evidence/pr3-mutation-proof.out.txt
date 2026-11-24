@@ -1,0 +1,10 @@
+M1 huge to all tools: mutation 1 failed in 0.61s; restored 1 passed in 0.59s; diff empty
+M2 valid to all tools: mutation 1 failed in 0.59s; restored 1 passed in 0.63s; diff empty
+M3 success wrong-type as PASS: mutation 1 failed in 0.61s; restored 1 passed in 0.59s; diff empty
+M4 exited as PASS: mutation 1 failed in 0.60s; restored 1 passed in 0.56s; diff empty
+M5 ignore budget: mutation 1 failed in 0.62s; restored 1 passed in 0.57s; diff empty
+M6 final liveness always PASS: mutation 1 failed in 0.83s; restored 1 passed in 0.83s; diff empty
+M7 omit replay: mutation 1 failed in 0.63s; restored 1 passed in 0.57s; diff empty
+restored full suite: 103 passed in 33.13s
+ALL LOCAL MUTATIONS PROVEN
+M4 Windows CI: run=https://github.com/sarooo43/mcp-caretaker/actions/runs/45488556169 head=aadd6607949a5fdf28689b257b1da2941a8677e4 all_four_jobs=failure job_windows_3_11=https://github.com/sarooo43/mcp-caretaker/actions/runs/45488556169/job/138780401761 conclusion=failure short_log=3 failed, 100 passed; FAILED tests/test_robustness_runner.py::test_wrong_type_crash_fails_rob_001 branch_deleted=yes
