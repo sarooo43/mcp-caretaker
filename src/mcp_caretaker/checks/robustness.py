@@ -132,10 +132,16 @@ def make_valid_arguments(schema: Any) -> dict[str, Any] | None:
         not isinstance(name, str) for name in required
     ):
         return None
+    for prop in properties.values():
+        if not isinstance(prop, Mapping) or _has_banned_keys(prop):
+            return None
+        declared = prop.get("type")
+        if not isinstance(declared, str) or declared not in TYPE_DEFAULTS:
+            return None
     arguments: dict[str, Any] = {}
     for name in required:
         prop = properties.get(name)
-        if not isinstance(prop, Mapping) or _has_banned_keys(prop):
+        if not isinstance(prop, Mapping):
             return None
         declared = prop.get("type")
         if not isinstance(declared, str) or declared not in TYPE_DEFAULTS:
