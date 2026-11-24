@@ -7,18 +7,22 @@ SDK's own ``SessionMessage`` and JSON-RPC adapter.
 
 The SDK session lives in a runner task, not in the caller's task: that keeps the
 SDK's cancel scopes out of the caller's task, so cleanup cannot leave a stray
-cancellation behind.
+cancellation behind. A small bridge tap records raw ``tools/list`` result dicts
+and non-protocol stdout lines; it never stores the whole stream.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import signal
 import sys
 import tempfile
 import time
+from collections.abc import Iterator
 from contextlib import suppress
+from dataclasses import dataclass, field
 from pathlib import Path
 from types import TracebackType
 from typing import Any, Self
@@ -26,9 +30,11 @@ from typing import Any, Self
 import anyio
 from anyio.streams.text import TextReceiveStream
 from mcp import ClientSession
+from mcp.shared.exceptions import MCPError
 from mcp.shared.message import SessionMessage
-from mcp_types import jsonrpc_message_adapter
+from mcp_types import PaginatedRequestParams, jsonrpc_message_adapter
 
+from ._sdk_windows import windows_helpers
 from .errors import (
     CallTimeout,
     CaretakerError,
@@ -37,23 +43,97 @@ from .errors import (
     StartupTimeout,
 )
 from .launch import LaunchSpec, build_child_env, redact_values
+from .thresholds import MAX_TOOLS_PAGES
 
 STDERR_CAP = 64 * 1024
 _STDERR_TAIL_FOR_ERRORS = 2048
+_STDOUT_NOISE_LINES = 5
+_STDOUT_NOISE_CHARS = 200
 
 
-def _parse_line(line: str) -> SessionMessage | Exception:
-    """Parse one newline-delimited JSON-RPC line, as the SDK's stdio client does."""
-    try:
-        return SessionMessage(
-            jsonrpc_message_adapter.validate_json(line, by_name=False)
-        )
-    except ValueError as exc:
-        return exc
+@dataclass
+class _BridgeTap:
+    """Keep only raw tools/list results and a capped view of stdout noise."""
+
+    raw_tools_pages: list[dict[str, Any]] = field(default_factory=list)
+    stdout_noise: list[str] = field(default_factory=list)
+    stdout_noise_count: int = 0
+    tools_list_error: str | None = None
+    _tools_list_ids: set[Any] = field(default_factory=set)
+
+    def reset_tools_list_error(self) -> None:
+        self.tools_list_error = None
+
+    def note_request(self, data: bytes) -> None:
+        try:
+            obj = json.loads(data)
+        except (ValueError, TypeError, UnicodeDecodeError):
+            return
+        if isinstance(obj, dict) and obj.get("method") == "tools/list" and "id" in obj:
+            with suppress(TypeError):
+                self._tools_list_ids.add(obj["id"])
+
+    def inspect_line(self, line: str) -> SessionMessage | None:
+        try:
+            obj = json.loads(line)
+        except (ValueError, TypeError):
+            self._add_noise(line)
+            return None
+        if isinstance(obj, dict):
+            mid = obj.get("id")
+            try:
+                tracked = mid in self._tools_list_ids
+            except TypeError:
+                tracked = False
+            if tracked:
+                self._tools_list_ids.discard(mid)
+                result = obj.get("result")
+                if isinstance(result, dict) and isinstance(result.get("tools"), list):
+                    self.raw_tools_pages.append(result)
+                elif "error" in obj:
+                    error = obj.get("error")
+                    if isinstance(error, dict):
+                        code = error.get("code", "?")
+                        message = error.get("message", "tools/list error")
+                        self.tools_list_error = f"JSON-RPC {code}: {message}"[:200]
+                    else:
+                        self.tools_list_error = f"JSON-RPC error: {error}"[:200]
+        try:
+            return SessionMessage(
+                jsonrpc_message_adapter.validate_json(line, by_name=False)
+            )
+        except Exception:  # noqa: BLE001 - any non-protocol line becomes noise
+            self._add_noise(line)
+            return None
+
+    def _add_noise(self, line: str) -> None:
+        self.stdout_noise_count += 1
+        if len(self.stdout_noise) < _STDOUT_NOISE_LINES:
+            self.stdout_noise.append(line[:_STDOUT_NOISE_CHARS])
 
 
-async def _stdout_reader(process: Any, read_send: Any) -> None:
-    """Forward the child's stdout lines into the session's read stream."""
+def _walk_exceptions(exc: BaseException) -> Iterator[BaseException]:
+    yield exc
+    for child in getattr(exc, "exceptions", None) or []:
+        yield from _walk_exceptions(child)
+
+
+def _exception_has_type(exc: BaseException, kind: type[BaseException]) -> bool:
+    return any(isinstance(item, kind) for item in _walk_exceptions(exc))
+
+
+def _error_text(exc: BaseException) -> str:
+    leaves = [
+        item for item in _walk_exceptions(exc) if not getattr(item, "exceptions", None)
+    ]
+    leaf = leaves[-1] if leaves else exc
+    lines = str(leaf).splitlines()
+    first = lines[0] if lines else type(leaf).__name__
+    return f"{type(leaf).__name__}: {first}"[:300]
+
+
+async def _stdout_reader(process: Any, read_send: Any, tap: _BridgeTap) -> None:
+    """Forward protocol lines, and count non-protocol lines, with a bounded tap."""
     buffer = ""
     text_stream = TextReceiveStream(process.stdout, encoding="utf-8", errors="replace")
     try:
@@ -62,8 +142,11 @@ async def _stdout_reader(process: Any, read_send: Any) -> None:
                 lines = (buffer + chunk).split("\n")
                 buffer = lines.pop()
                 for line in lines:
-                    if line.strip():
-                        await read_send.send(_parse_line(line))
+                    if not line.strip():
+                        continue
+                    message = tap.inspect_line(line)
+                    if message is not None:
+                        await read_send.send(message)
     except (
         anyio.EndOfStream,
         anyio.ClosedResourceError,
@@ -73,7 +156,7 @@ async def _stdout_reader(process: Any, read_send: Any) -> None:
         return
 
 
-async def _stdin_writer(process: Any, write_recv: Any) -> None:
+async def _stdin_writer(process: Any, write_recv: Any, tap: _BridgeTap) -> None:
     """Forward the session's write stream into the child's stdin."""
     try:
         async with write_recv:
@@ -82,6 +165,7 @@ async def _stdin_writer(process: Any, write_recv: Any) -> None:
                     message.message.model_dump_json(by_alias=True, exclude_unset=True)
                     + "\n"
                 ).encode("utf-8")
+                tap.note_request(data)
                 await process.stdin.send(data)
     except (
         anyio.EndOfStream,
@@ -98,14 +182,8 @@ async def _spawn_process(
     """Spawn argv directly, never through a shell and never as one command string."""
     command, args = str(argv[0]), list(argv[1:])
     if sys.platform == "win32":
-        # The SDK's own helper creates a Job Object so the whole tree can be
-        # terminated on Windows. It also handles event loops without async
-        # subprocess support.
-        from mcp.os.win32.utilities import create_windows_process
-
-        return await create_windows_process(
-            command, args, env=env, errlog=errlog, cwd=str(cwd)
-        )
+        create, _, _ = windows_helpers()
+        return await create(command, args, env=env, errlog=errlog, cwd=str(cwd))
     return await anyio.open_process(
         [command, *args],
         env=env,
@@ -139,7 +217,9 @@ class ServerSession:
         self.spec = spec
         self.initialize_result: Any = None
         self.exit_code: int | None = None
+        self.exited_by_itself: bool | None = None
 
+        self._tap = _BridgeTap()
         self._temp_area: Path | None = None
         self._workdir: Path | None = None
         self._stderr_path: Path | None = None
@@ -167,6 +247,31 @@ class ServerSession:
     def workdir(self) -> Path | None:
         """The fresh empty folder the child runs in."""
         return self._workdir
+
+    @property
+    def raw_tools_pages(self) -> list[dict[str, Any]]:
+        """Raw wire ``result`` dicts for ``tools/list`` responses, in order."""
+        return self._tap.raw_tools_pages
+
+    @property
+    def stdout_noise(self) -> list[str]:
+        """Up to five non-protocol stdout lines, each cut at 200 characters."""
+        return self._tap.stdout_noise
+
+    @property
+    def stdout_noise_count(self) -> int:
+        """Count of all non-protocol stdout lines seen."""
+        return self._tap.stdout_noise_count
+
+    @property
+    def tools_list_error(self) -> str | None:
+        """A capped JSON-RPC error message for a tapped tools/list response."""
+        return self._tap.tools_list_error
+
+    @property
+    def child_pid(self) -> int | None:
+        """Child pid while the process object exists."""
+        return getattr(self._process, "pid", None)
 
     @property
     def stderr_text(self) -> str:
@@ -254,8 +359,12 @@ class ServerSession:
 
         self._task_group = anyio.create_task_group()
         await self._task_group.__aenter__()
-        self._task_group.start_soon(_stdout_reader, self._process, self._read_send)
-        self._task_group.start_soon(_stdin_writer, self._process, self._write_recv)
+        self._task_group.start_soon(
+            _stdout_reader, self._process, self._read_send, self._tap
+        )
+        self._task_group.start_soon(
+            _stdin_writer, self._process, self._write_recv, self._tap
+        )
         self._task_group.start_soon(self._runner)
 
         try:
@@ -306,9 +415,56 @@ class ServerSession:
                 await anyio.sleep(0.01)
         return self._process.returncode
 
-    async def list_tools(self) -> Any:
-        """Return the SDK's ``ListToolsResult`` unchanged (a wrapper may come later)."""
-        return await self._require_client().list_tools()
+    async def list_tools(self, *, params: Any | None = None) -> Any:
+        """Return the SDK's ``ListToolsResult`` unchanged. ``params`` may hold a cursor."""
+        return await self._require_client().list_tools(params=params)
+
+    async def collect_tools_pages(
+        self,
+    ) -> tuple[list[dict[str, Any]], bool, str | None]:
+        """Follow ``nextCursor`` up to MAX_TOOLS_PAGES; return pages, cap flag, error."""
+        pages: list[dict[str, Any]] = []
+        cursor: str | None = None
+        for _ in range(MAX_TOOLS_PAGES):
+            before = len(self.raw_tools_pages)
+            self._tap.reset_tools_list_error()
+            try:
+                with anyio.fail_after(self.spec.call_timeout):
+                    if cursor is None:
+                        await self.list_tools()
+                    else:
+                        await self.list_tools(
+                            params=PaginatedRequestParams(cursor=cursor)
+                        )
+            except BaseException as exc:
+                cancelled = anyio.get_cancelled_exc_class()
+                if _exception_has_type(exc, cancelled):
+                    raise
+                if _exception_has_type(exc, TimeoutError) or _exception_has_type(
+                    exc, MCPError
+                ):
+                    return pages, False, _error_text(exc)
+                captured = self.raw_tools_pages[before:]
+                if not captured:
+                    return pages, False, _error_text(exc)
+            else:
+                captured = self.raw_tools_pages[before:]
+                if not captured:
+                    return pages, False, "tools/list returned no raw result"
+            if self.tools_list_error is not None:
+                return pages, False, self.tools_list_error
+            page = captured[-1]
+            tools = page.get("tools")
+            if not isinstance(tools, list) or any(
+                not isinstance(item, dict) for item in tools
+            ):
+                return pages, False, "tools/list returned a non-object tool"
+            pages.append(page)
+            next_cursor = page.get("nextCursor")
+            if not next_cursor:
+                return pages, False, None
+            cursor = str(next_cursor)
+        return pages, True, None
 
     async def call_tool(
         self, name: str, arguments: dict[str, Any] | None, timeout: float | None = None
@@ -355,6 +511,7 @@ class ServerSession:
         if self._stop_event is not None:
             self._stop_event.set()
 
+        stop_error: BaseException | None = None
         # Shield the resource cleanup from an outer cancellation. This shield is
         # entered and exited INSIDE our task group's scope, so the task group's
         # cancel scope is still unwound last (LIFO), like the SDK's stdio client.
@@ -365,7 +522,10 @@ class ServerSession:
                         await stream.aclose()
 
             if self._process is not None:
-                await self._stop_process_tree(self._process)
+                try:
+                    await self._stop_process_tree(self._process)
+                except BaseException as exc:  # noqa: BLE001 - cleanup finishes, then re-raises
+                    stop_error = exc
                 self.exit_code = self._process.returncode
                 for stream in (self._process.stdin, self._process.stdout):
                     if stream is not None:
@@ -401,23 +561,23 @@ class ServerSession:
             await anyio.lowlevel.cancel_shielded_checkpoint()
             self._task_group = None
         self._client = None
+        if stop_error is not None:
+            raise stop_error
 
     async def _stop_process_tree(self, process: Any) -> None:
+        self.exited_by_itself = None
         # Closing stdin gives a well-behaved server a chance to exit on its own.
         with suppress(Exception):
             await process.stdin.aclose()
-        with anyio.move_on_after(1.0):
+        with anyio.move_on_after(self.spec.shutdown_grace):
             while process.returncode is None:
                 await anyio.sleep(0.01)
+        self.exited_by_itself = process.returncode is not None
 
         if sys.platform == "win32":
-            from mcp.os.win32.utilities import (
-                close_process_job,
-                terminate_windows_process_tree,
-            )
-
-            await terminate_windows_process_tree(process)
-            close_process_job(process)
+            _, terminate, close = windows_helpers()
+            await terminate(process)
+            close(process)
             with anyio.move_on_after(3.0):
                 while process.returncode is None:
                     await anyio.sleep(0.01)
