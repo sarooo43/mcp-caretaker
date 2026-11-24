@@ -35,4 +35,8 @@ testpaths = ["tests"]
 timeout = 60
 
 [tool.ruff]
-extend-exclude = ["docs/decisions/0001-evidence", "docs/decisions/0003-evidence"]
+extend-exclude = [
+    "docs/decisions/0001-evidence",
+    "docs/decisions/0003-evidence",
+    "docs/decisions/0004-evidence",
+]

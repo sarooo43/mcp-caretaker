@@ -1,0 +1,26 @@
+await self._dispatcher.notify(method, params, opts, _related_request_id=self._request_id)
+return await self._dispatcher.send_raw_request(method, params, opts, _related_request_id=self._request_id)
+def _plan_outbound(related_request_id: RequestId | None, opts: CallOptions | None) -> _OutboundPlan:
+`related_request_id` wins over resumption hints (they are dropped). Only
+if related_request_id is not None:
+"dropping resumption hints: related_request_id %r takes precedence on metadata", related_request_id
+return _OutboundPlan(ServerMessageMetadata(related_request_id=related_request_id), cancel_on_abandon)
+_related_request_id: RequestId | None = None,
+`_related_request_id` is set only by `_JSONRPCDispatchContext` so that
+# to inbound response ids, so a supplied "7" still correlates
+# a WouldBlock later just means the waiter already has its one outcome.
+plan = _plan_outbound(_related_request_id, opts)
+_related_request_id,
+partial(self._cancel_outbound, request_id, "caller cancelled", _related_request_id),
+# Remove the waiter on every path so a late response is dropped, not leaked.
+self._pending.pop(pending_key, None)
+_related_request_id: RequestId | None = None,
+await self._write(msg, _plan_outbound(_related_request_id, opts).metadata)
+# `notifications/cancelled` id still correlates.
+here (they correlate against the `_in_flight`/`_pending` tables this
+logger.debug("dropping response for unknown/late request id %r", request_id)
+# peers drop late responses, while a second answer for one id
+# No `_in_flight` pop here: the inner finally covers every path, and a late pop could evict a reused id.
+async def _cancel_outbound(self, request_id: RequestId, reason: str, related_request_id: RequestId | None) -> None:
+# Thread `related_request_id` so streamable HTTP routes the cancel onto
+_related_request_id=related_request_id,

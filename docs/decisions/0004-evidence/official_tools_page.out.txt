@@ -1,0 +1,8 @@
+method: fetch_page https://modelcontextprotocol.io/specification/latest/server/tools
+VERIFIED official Tools page, Error Handling section:
+Tools use two error reporting mechanisms.
+Protocol Errors: "Unknown tool", malformed requests, server errors; returned as standard JSON-RPC errors.
+Example protocol error code: -32602, message: Unknown tool: invalid_tool_name.
+Tool Execution Errors: input validation errors, business logic errors; "reported in tool results with isError: true".
+VERIFIED official Tools page, Tool section: clients MUST consider tool annotations untrusted unless they come from trusted servers.
+NOT VERIFIED: SDK-version-specific behaviour is not taken from this page; it is in sdk_probe_behaviour.out.txt.

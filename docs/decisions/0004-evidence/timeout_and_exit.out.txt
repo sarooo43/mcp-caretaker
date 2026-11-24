@@ -1,0 +1,8 @@
+timeout_call CallTimeout: CallTimeout: tools/call 'sleep' exceeded 0.2 seconds elapsed 0.2
+after_timeout_list_tools ok 4
+after_late_answer_list_tools ok 4
+stdout_noise_count 0
+exit_during_call MCPError: MCPError: Connection closed elapsed 0.0
+child_returncode_before_shutdown 7
+dead_child_list_tools MCPError: MCPError: Connection closed elapsed 0.0
+exited_by_itself True
