@@ -64,7 +64,7 @@ def test_desc_002_length_boundaries() -> None:
     assert verdicts == [Verdict.WARN, Verdict.PASS, Verdict.PASS, Verdict.WARN]
 
 
-def test_desc_005_typed_equivalents_and_untyped_property() -> None:
+def test_desc_005_typed_equivalents() -> None:
     for key in TYPED_KEYS:
         tool = _tool(properties={"value": {key: "v"}})
         assert check_desc_005([tool]).verdict is Verdict.PASS
@@ -72,8 +72,8 @@ def test_desc_005_typed_equivalents_and_untyped_property() -> None:
     assert check_desc_005([untyped]).verdict is Verdict.WARN
 
 
-def test_desc_007_hidden_categories_and_allowed_marks() -> None:
-    for char in ("\u200b", "\u0001", "\ue000", "\ud800"):
+def test_desc_007_flags_zero_width_and_bidi_but_not_newline_or_tab() -> None:
+    for char in ("\u200b", "\u202e", "\u0001", "\ue000", "\ud800"):
         tool = _tool(description="A clear description " + char)
         assert check_desc_007([tool]).verdict is Verdict.WARN
     allowed = _tool(description="Cafe\u0301 \ufe0f")

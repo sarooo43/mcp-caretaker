@@ -5,6 +5,8 @@ templates. Tests start them as real subprocesses with absolute script paths;
 mocks of the subprocess or SDK do not count as behaviour evidence. Relative paths
 in `argv` are not rewritten by the launcher, so use absolute paths.
 
+**From this version, tools that declare readOnlyHint receive real calls with generated input. A server can lie about that hint. Only test servers you trust.**
+
 `_raw_tools.py` is a standard-library-only helper. It writes line-delimited
 JSON-RPC on stdout and lets a fixture choose raw `tools/list` pages. This keeps
 wire text available to the bounded bridge tap even when the SDK's own objects
@@ -14,13 +16,19 @@ never real secrets.
 
 | Fixture | Source | What it exercises |
 | --- | --- | --- |
-| `clean_server.py` | official SDK | Clean handshake, two tools, described and typed top-level properties |
-| `bad_descriptions.py` | raw helper | One separate problem for each description/schema check |
+| `clean_server.py` | official SDK | Clean handshake, two read-only tools, described and typed top-level properties |
+| `bad_no_descriptions.py` | raw helper | One tool with no description |
+| `bad_description_length.py` | raw helper | 5- and 1100-character descriptions |
+| `bad_schema_not_object.py` | raw helper | One missing `inputSchema` and one string `inputSchema` |
+| `bad_missing_types.py` | raw helper | One untyped top-level property |
+| `bad_missing_property_descriptions.py` | raw helper | One undocumented top-level property |
+| `bad_whitespace_run.py` | raw helper | 80 spaces plus harmless filler |
+| `bad_tool_name_format.py` | raw helper | A name with a space and a 129-character name |
 | `bad_duplicate_names.py` | raw helper | Two tools with the same name |
 | `bad_hidden_characters.py` | raw helper | Format, control and private-use characters in scanned fields |
 | `paginated_server.py` | raw helper | Two `tools/list` pages; page two has a tool with no description |
 | `bad_page_cap.py` | raw helper | More pages than `MAX_TOOLS_PAGES`; the last page is not read |
-| `bad_tools_list_error.py` | raw helper | JSON-RPC error for `tools/list` |
+| `bad_tools_list_error.py` | raw helper | JSON-RPC error for `tools/list`; zero-tools mode with `CARETAKER_TEST_ZERO_TOOLS` |
 | `bad_empty_handshake.py` | raw helper | Empty `serverInfo.name` and `serverInfo.version` |
 | `leaky_stdout.py` | raw helper | Non-protocol stdout lines with fake text and a control character |
 | `bad_ignores_stdin_close.py` | raw helper | Keeps running after stdin EOF; records its pid for cleanup tests |

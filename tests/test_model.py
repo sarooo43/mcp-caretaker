@@ -24,6 +24,27 @@ from mcp_caretaker.thresholds import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+PR2_IDS = (
+    "CT-START-001",
+    "CT-START-002",
+    "CT-START-003",
+    "CT-START-004",
+    "CT-START-005",
+    "CT-DESC-001",
+    "CT-DESC-002",
+    "CT-DESC-003",
+    "CT-DESC-004",
+    "CT-DESC-005",
+    "CT-DESC-006",
+    "CT-DESC-007",
+    "CT-DESC-008",
+    "CT-DESC-009",
+)
+
+
+def test_registry_lists_all_14_check_ids_in_order() -> None:
+    assert CHECK_IDS[: len(PR2_IDS)] == PR2_IDS
+    assert len(PR2_IDS) == 14
 
 
 def test_verdict_values_are_exactly_four_strings() -> None:
@@ -57,7 +78,7 @@ def test_run_checks_signature_is_spec_and_keyword_only_confirmed() -> None:
     assert parameters["confirmed"].kind is inspect.Parameter.KEYWORD_ONLY
 
 
-def test_run_result_to_dict_is_json_serialisable_and_has_no_score() -> None:
+def test_result_to_dict_is_json_serialisable_with_stable_keys() -> None:
     result = CheckResult(
         check_id="CT-DESC-001",
         title="Every tool has a description",
@@ -82,7 +103,7 @@ def test_visible_text_escapes_non_printables() -> None:
     assert visible_text("a\u200b\n\t") == "a\\u200B\\u000A\\u0009"
 
 
-def test_evidence_is_redacted_escaped_capped_and_omits_extra_items() -> None:
+def test_evidence_is_capped_and_escaped() -> None:
     secret = "FAKE-EVIDENCE-VALUE-1234"
     long_detail = ("before " + secret + " \u200b " + "X" * 400).strip()
     original = CheckResult(
