@@ -55,6 +55,7 @@ written before any product code for the new check group.
   number, `"not-a-bool"` for boolean, and two extra wrong values for array and
   object tools all produced `CallToolResult.is_error=True`. None was coerced to a
   successful result. No wrong value needs changing.
+- VERIFIED (same output): used a dedicated SDK probe server with one primitive tool per declared type instead of modifying clean_server.py; all requested wrong values were exercised and none coerced to success.
 - `NOT VERIFIED`: behaviour of SDK versions other than the exact pin; no other
   version is used.
 

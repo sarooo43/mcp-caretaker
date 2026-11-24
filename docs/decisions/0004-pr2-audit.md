@@ -3,8 +3,8 @@
 This audit was written before the robustness product code. A name is marked
 `YES` only when the exact test name existed at audit time. An equivalent name is
 shown with the assertion it already covered; the action column records the exact
-name change or new test. Every new behaviour test uses a real subprocess under
-`examples/servers/`.
+name change or new test that was applied. Every new behaviour test uses a real
+subprocess under `examples/servers/`. All rows in the table are now implemented.
 
 The brief says 32 required names and then enumerates 33. I treated all 33 names
 as required. The consolidated `bad_descriptions.py` fixture and its one
@@ -30,7 +30,7 @@ consolidated runner test were replaced by focused fixtures and exact-name tests.
 | `test_startup_hang_fails_start_001` | equivalent: `tests/test_runner.py::test_startup_hang_fails_start_001_and_everything_else_is_not_tested` | Rename to exact name; keep stronger assertions. |
 | `test_no_server_info_warns_start_002` | equivalent: `tests/test_runner.py::test_empty_handshake_warns_start_002_and_keeps_protocol_version` | Rename to exact name. |
 | `test_zero_tools_warns_start_003` | no real-subprocess test | Add exact-name real-subprocess test using a zero-tools mode of an existing fixture. |
-| `test_tools_list_error_fails_start_003_and_desc_checks_not_tested` | equivalent: `tests/test_runner.py::test_tools_list_error_fails_start_003_and_desc_checks_are_not_tested` | Rename to exact name; include robustness checks as not tested. |
+| `test_tools_list_error_fails_start_003_and_desc_checks_not_tested` | equivalent: `tests/test_runner.py::test_tools_list_error_fails_start_003_and_desc_checks_are_not_tested` | Renamed to exact name; robustness checks are included as not tested. |
 | `test_stdout_noise_start_004` | equivalent: `tests/test_runner.py::test_leaky_stdout_warns_start_004_and_cap_is_bounded` | Rename to exact name. |
 | `test_server_that_ignores_stdin_close_warns_start_005_and_is_killed` | YES `tests/test_runner.py::test_server_that_ignores_stdin_close_warns_start_005_and_is_killed` | Keep. |
 | `test_pagination_collects_all_pages_and_flags_page_two_tool` | equivalent: `tests/test_runner.py::test_paginated_tools_are_collected_and_flag_page_two_tool` | Rename to exact name. |
@@ -45,6 +45,9 @@ consolidated runner test were replaced by focused fixtures and exact-name tests.
 | `test_bad_tool_name_format_warns_desc_009` | no | Add `bad_tool_name_format.py` with a space and a 129-character name, and exact-name test. |
 | `test_evidence_redacts_extra_env_value` | YES `tests/test_runner.py::test_evidence_redacts_extra_env_value` | Keep. |
 | `test_crashing_check_becomes_not_tested_and_others_still_run` | equivalent: `tests/test_runner.py::test_crashing_check_is_not_tested_with_reason_and_others_still_run` | Rename to exact name. |
+
+The exact-name tools/list error test now asserts that every `CT-DESC-*` and
+`CT-ROB-*` result is `not_tested` with reason `tools/list failed`.
 
 ## Fixture split
 
