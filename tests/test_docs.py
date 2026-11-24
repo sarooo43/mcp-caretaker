@@ -45,7 +45,6 @@ def test_new_docs_have_no_dates_or_chained_shell_commands() -> None:
         "attack",
         "exploit",
         "unsafe",
-        "robustness",
         "canary",
         "stability",
     ):
@@ -55,8 +54,19 @@ def test_new_docs_have_no_dates_or_chained_shell_commands() -> None:
 def test_thresholds_are_documented_as_guesses() -> None:
     text = (ROOT / "docs/checks/README.md").read_text(encoding="utf-8")
     phrase = "this number is a guess; it lives in thresholds.py"
-    assert text.count(phrase) == 7
-    for number in ("10", "1000", "40", "20", "300", "5"):
+    assert text.count(phrase) == 11
+    for number in (
+        "10",
+        "1000",
+        "40",
+        "20",
+        "300",
+        "5",
+        "1048576",
+        "50",
+        "120",
+        "2000",
+    ):
         assert f"= {number}" in text
 
 

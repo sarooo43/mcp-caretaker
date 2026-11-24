@@ -1,4 +1,4 @@
-"""Registry for the first two check groups. No CLI or report layer here."""
+"""Registry for the three check groups. No CLI or report layer here."""
 
 from __future__ import annotations
 
@@ -94,6 +94,42 @@ CHECKS: tuple[CheckInfo, ...] = (
         "description/schema basics",
         "Tool names match the spec name rule",
         "docs/checks/CT-DESC-009.md",
+    ),
+    CheckInfo(
+        "CT-ROB-001",
+        "robustness",
+        "Wrong-type input is rejected",
+        "docs/checks/CT-ROB-001.md",
+    ),
+    CheckInfo(
+        "CT-ROB-002",
+        "robustness",
+        "Missing required input is rejected",
+        "docs/checks/CT-ROB-002.md",
+    ),
+    CheckInfo(
+        "CT-ROB-003",
+        "robustness",
+        "Unknown tool name is rejected",
+        "docs/checks/CT-ROB-003.md",
+    ),
+    CheckInfo(
+        "CT-ROB-004",
+        "robustness",
+        "Large string input is handled",
+        "docs/checks/CT-ROB-004.md",
+    ),
+    CheckInfo(
+        "CT-ROB-005",
+        "robustness",
+        "Valid read-only call succeeds",
+        "docs/checks/CT-ROB-005.md",
+    ),
+    CheckInfo(
+        "CT-ROB-006",
+        "robustness",
+        "Server remains responsive after probes",
+        "docs/checks/CT-ROB-006.md",
     ),
 )
 

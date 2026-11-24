@@ -18,7 +18,11 @@ from mcp_caretaker.thresholds import (
     DESC_MIN_LENGTH,
     EVIDENCE_MAX_CHARS,
     EVIDENCE_MAX_ITEMS,
+    HUGE_STRING_LENGTH,
     MAX_TOOLS_PAGES,
+    MAX_TOOLS_PROBED,
+    PROBE_BUDGET_SECONDS,
+    REPLAY_MAX_CHARS,
     SHUTDOWN_GRACE_SECONDS,
     WHITESPACE_RUN_LIMIT,
 )
@@ -40,6 +44,14 @@ PR2_IDS = (
     "CT-DESC-008",
     "CT-DESC-009",
 )
+ROB_IDS = (
+    "CT-ROB-001",
+    "CT-ROB-002",
+    "CT-ROB-003",
+    "CT-ROB-004",
+    "CT-ROB-005",
+    "CT-ROB-006",
+)
 
 
 def test_registry_lists_all_14_check_ids_in_order() -> None:
@@ -51,25 +63,15 @@ def test_verdict_values_are_exactly_four_strings() -> None:
     assert [item.value for item in Verdict] == ["pass", "warn", "fail", "not_tested"]
 
 
-def test_check_registry_has_14_unique_ids_in_order() -> None:
-    assert CHECK_IDS == (
-        "CT-START-001",
-        "CT-START-002",
-        "CT-START-003",
-        "CT-START-004",
-        "CT-START-005",
-        "CT-DESC-001",
-        "CT-DESC-002",
-        "CT-DESC-003",
-        "CT-DESC-004",
-        "CT-DESC-005",
-        "CT-DESC-006",
-        "CT-DESC-007",
-        "CT-DESC-008",
-        "CT-DESC-009",
-    )
-    assert len(set(CHECK_IDS)) == len(CHECKS) == 14
+def test_registry_lists_all_20_check_ids_in_order() -> None:
+    assert CHECK_IDS == PR2_IDS + ROB_IDS
+    assert len(set(CHECK_IDS)) == len(CHECKS) == 20
     assert all(info.docs_path.startswith("docs/checks/") for info in CHECKS)
+    assert {info.group for info in CHECKS} == {
+        "startup",
+        "description/schema basics",
+        "robustness",
+    }
 
 
 def test_run_checks_signature_is_spec_and_keyword_only_confirmed() -> None:
@@ -95,6 +97,27 @@ def test_result_to_dict_is_json_serialisable_with_stable_keys() -> None:
     )
     data = run.to_dict()
     assert json.loads(json.dumps(data))["results"][0]["verdict"] == "pass"
+    assert set(data) == {
+        "caretaker_version",
+        "protocol_version",
+        "server_name",
+        "server_version",
+        "results",
+    }
+    assert set(data["results"][0]) == {
+        "check_id",
+        "title",
+        "verdict",
+        "summary",
+        "evidence",
+        "reason",
+    }
+    assert set(data["results"][0]["evidence"][0]) == {
+        "subject",
+        "detail",
+        "replay",
+    }
+    assert data["results"][0]["evidence"][0]["replay"] is None
     assert "score" not in data
     assert "grade" not in data
 
@@ -149,8 +172,12 @@ def test_threshold_constants_have_expected_values_and_comments() -> None:
     assert MAX_TOOLS_PAGES == 10
     assert (EVIDENCE_MAX_ITEMS, EVIDENCE_MAX_CHARS) == (20, 300)
     assert SHUTDOWN_GRACE_SECONDS == 5
+    assert HUGE_STRING_LENGTH == 1_048_576
+    assert MAX_TOOLS_PROBED == 50
+    assert PROBE_BUDGET_SECONDS == 120
+    assert REPLAY_MAX_CHARS == 2000
     source = (ROOT / "src/mcp_caretaker/thresholds.py").read_text(encoding="utf-8")
-    assert source.count("Guessed") >= 7
+    assert source.count("Guessed") >= 11
 
 
 def test_pyproject_runtime_dependencies_are_unchanged() -> None:

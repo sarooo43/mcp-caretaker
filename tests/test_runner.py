@@ -37,15 +37,15 @@ def _by_id(run: RunResult) -> dict[str, object]:
 @pytest.mark.anyio
 async def test_clean_server_passes_all_checks() -> None:
     run = await run_checks(_spec("clean_server.py", shutdown_grace=5.0), confirmed=True)
-    assert len(run.results) == 14
-    assert [result.verdict for result in run.results] == [Verdict.PASS] * 14
+    assert len(run.results) == 20
+    assert [result.verdict for result in run.results] == [Verdict.PASS] * 20
 
 
 @pytest.mark.anyio
 async def test_runner_results_are_ordered_and_have_one_result_per_id() -> None:
     run = await run_checks(_spec("bad_duplicate_names.py"), confirmed=True)
     assert [result.check_id for result in run.results] == list(CHECK_IDS)
-    assert len({result.check_id for result in run.results}) == 14
+    assert len({result.check_id for result in run.results}) == 20
     assert all(
         result.title == CHECK_BY_ID[result.check_id].title for result in run.results
     )
@@ -147,7 +147,7 @@ async def test_startup_exit_fails_start_001_and_everything_else_is_not_tested() 
         for item in by_id["CT-START-001"].evidence
     )
     others = [result for result in run.results if result.check_id != "CT-START-001"]
-    assert len(others) == 13
+    assert len(others) == 19
     assert all(
         result.verdict is Verdict.NOT_TESTED and result.reason for result in others
     )
@@ -163,7 +163,7 @@ async def test_startup_hang_fails_start_001() -> None:
     by_id = _by_id(run)
     assert by_id["CT-START-001"].verdict is Verdict.FAIL
     others = [result for result in run.results if result.check_id != "CT-START-001"]
-    assert len(others) == 13
+    assert len(others) == 19
     assert all(
         result.verdict is Verdict.NOT_TESTED and result.reason for result in others
     )
@@ -265,7 +265,7 @@ async def test_tools_list_error_fails_start_003_and_desc_checks_not_tested() -> 
     by_id = _by_id(run)
     assert by_id["CT-START-003"].verdict is Verdict.FAIL
     for check_id in CHECK_IDS:
-        if check_id.startswith("CT-DESC-"):
+        if check_id.startswith(("CT-DESC-", "CT-ROB-")):
             assert by_id[check_id].verdict is Verdict.NOT_TESTED
             assert by_id[check_id].reason == "tools/list failed"
     assert by_id["CT-START-001"].verdict is Verdict.PASS

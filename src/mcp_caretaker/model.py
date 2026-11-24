@@ -27,6 +27,7 @@ class Verdict(str, Enum):
 class Evidence:
     subject: str
     detail: str
+    replay: str | None = None
 
 
 @dataclass(frozen=True)
@@ -61,7 +62,11 @@ class RunResult:
                     "verdict": result.verdict.value,
                     "summary": result.summary,
                     "evidence": [
-                        {"subject": item.subject, "detail": item.detail}
+                        {
+                            "subject": item.subject,
+                            "detail": item.detail,
+                            "replay": item.replay,
+                        }
                         for item in result.evidence
                     ],
                     "reason": result.reason,
@@ -102,6 +107,9 @@ def finalize_result(result: CheckResult, extra_env: Mapping[str, str]) -> CheckR
         Evidence(
             subject=_clean_text(item.subject, extra_env),
             detail=_clean_text(item.detail, extra_env),
+            replay=(
+                _clean_text(item.replay, extra_env) if item.replay is not None else None
+            ),
         )
         for item in evidence
     )
