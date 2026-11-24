@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling>=1.33.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcp-caretaker"
+version = "0.0.0.dev0"
+description = "Runtime behaviour tester for local MCP servers over stdio (pre-release skeleton)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Saboor Nasar" }]
+dependencies = ["mcp==2.3.0", "mcp-types==2.3.0"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.2.0",
+    "pytest-timeout>=2.4.0",
+    "ruff>=0.17.6",
+    "psutil>=7.2.2",
+]
+
+[project.scripts]
+mcp-caretaker = "mcp_caretaker.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/sarooo43/mcp-caretaker"
+Repository = "https://github.com/sarooo43/mcp-caretaker"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_caretaker"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+timeout = 60
+
+[tool.ruff]
+extend-exclude = ["docs/decisions/0001-evidence"]
