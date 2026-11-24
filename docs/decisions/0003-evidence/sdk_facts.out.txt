@@ -1,0 +1,13 @@
+mcp: 2.3.0 mcp-types: 2.3.0
+mcp Requires-Dist mcp-types: ['mcp-types==2.3.0']
+windows helper callables: ['create_windows_process', 'terminate_windows_process_tree', 'close_process_job']
+exported from mcp/os/win32: [False, False, False]
+utilities __all__: None
+list_tools: (self, *, params: 'types.PaginatedRequestParams | None' = None) -> 'types.ListToolsResult'
+PaginatedRequestParams fields: ['meta', 'cursor']
+InitializeResult aliases: [('meta', '_meta'), ('protocol_version', 'protocolVersion'), ('capabilities', 'capabilities'), ('server_info', 'serverInfo'), ('instructions', 'instructions')]
+ListToolsResult aliases: [('meta', '_meta'), ('ttl_ms', 'ttlMs'), ('cache_scope', 'cacheScope'), ('next_cursor', 'nextCursor'), ('tools', 'tools'), ('result_type', 'resultType')]
+Implementation fields: ['name', 'title', 'version', 'description', 'website_url', 'icons']
+Implementation {} -> ValidationError 2 validation errors for Implementation
+Implementation {'name': '', 'version': ''} -> {'name': '', 'version': ''}
+Implementation {'name': 'x'} -> ValidationError 1 validation error for Implementation

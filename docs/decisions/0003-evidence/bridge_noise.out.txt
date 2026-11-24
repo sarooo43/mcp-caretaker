@@ -1,0 +1,6 @@
+shutdown closes stdin: True
+shutdown waits before kill: True
+shutdown kills tree: True
+SDK ignores stream exception without observer: True
+noise= False handshake=ok tools= ['a']
+noise= True handshake=ok tools= ['a']

@@ -1,0 +1,6 @@
+init {"name": "raw", "version": "1"} -> protocol= 2025-11-25 serverInfo.name= 'raw' serverInfo.version= '1'
+init {"name": "", "version": ""} -> protocol= 2025-11-25 serverInfo.name= '' serverInfo.version= ''
+init {} raises ValidationError | unhandled errors in a TaskGroup (1 sub-exception)
+init {"name": "x"} raises ValidationError | unhandled errors in a TaskGroup (1 sub-exception)
+page1 tools= ['a'] next_cursor= '1'
+page2 tools= ['b'] next_cursor= None
