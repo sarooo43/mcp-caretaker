@@ -1,0 +1,32 @@
+PyPI latest: 2.3.0
+PyPI Requires-Python: >=3.10
+PyPI classifiers: ['Programming Language :: Python :: 3', 'Programming Language :: Python :: 3.10',
+  'Programming Language :: Python :: 3.11', 'Programming Language :: Python :: 3.12',
+  'Programming Language :: Python :: 3.13', 'Programming Language :: Python :: 3.14']
+2.x stable releases: ['2.0.0', '2.0.1', '2.1.0', '2.1.1', '2.2.0', '2.3.0']
+pre-releases: ['2.0.0a2', '2.0.0a3', '2.0.0b1', '2.0.0b2', '2.0.0rc1']
+installed mcp: 2.3.0
+protocol revisions: ('2024-11-05', '2025-03-26', '2025-06-18', '2025-11-25', '2026-07-28')
+handshake revisions: ('2024-11-05', '2025-03-26', '2025-06-18', '2025-11-25')
+modern revisions: ('2026-07-28',)
+supported: ('2024-11-05', '2025-03-26', '2025-06-18', '2025-11-25', '2026-07-28')
+stdio_client: (server: mcp.client.stdio.StdioServerParameters, errlog: TextIO = sys.stderr)
+  -> AsyncGenerator[tuple[ReadStream[SessionMessage | Exception], WriteStream[SessionMessage]], None]
+StdioServerParameters: (*, command: str, args: list[str] = <factory>, env: dict[str, str] | None = None,
+  cwd: str | pathlib.Path | None = None, encoding: str = 'utf-8',
+  encoding_error_handler: Literal['strict', 'ignore', 'replace'] = 'strict')
+ClientSession: (read_stream: ReadStream[SessionMessage | Exception] | None = None,
+  write_stream: WriteStream[SessionMessage] | None = None, read_timeout_seconds: float | None = None,
+  sampling_callback=None, elicitation_callback=None, list_roots_callback=None, logging_callback=None,
+  message_handler=None, client_info=None, *, log_level=None, sampling_capabilities=None,
+  extensions=None, result_claims=None, notification_bindings=None, dispatcher=None) -> None
+ClientSession.initialize: (self) -> types.InitializeResult
+ClientSession.call_tool: (self, name: str, arguments: dict[str, Any] | None = None,
+  read_timeout_seconds: float | None = None, progress_callback=None, *, input_responses=None,
+  request_state=None, meta=None, allow_input_required=False, allow_claimed=False)
+default env NAMES: ['HOME', 'LOGNAME', 'PATH', 'SHELL', 'USER']
+MCPServer.tool: (self, name=None, title=None, description=None, annotations: ToolAnnotations | None = None,
+  icons=None, meta=None, structured_output=None) -> Callable
+MCPServer.run: (self, transport: Literal['stdio', 'sse', 'streamable-http'] = 'stdio', **kwargs) -> None
+ToolAnnotations fields: ['title', 'read_only_hint', 'destructive_hint', 'idempotent_hint', 'open_world_hint']
+read_only_hint alias: readOnlyHint
