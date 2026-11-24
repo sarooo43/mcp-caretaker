@@ -1,8 +1,17 @@
-"""mcp-caretaker: a runtime behaviour tester for local MCP servers over stdio.
-
-This is a pre-release skeleton. Only --version and --help are implemented.
-"""
+"""mcp-caretaker: local MCP server runtime behaviour checks (pre-release library)."""
 
 __version__ = "0.0.0.dev0"
 
-__all__ = ["__version__"]
+from .model import (
+    CheckResult as CheckResult,
+)
+from .model import (
+    Evidence as Evidence,
+)
+from .model import (
+    RunResult as RunResult,
+)
+from .model import (
+    Verdict as Verdict,
+)
+from .runner import run_checks as run_checks
