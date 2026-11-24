@@ -165,6 +165,52 @@ async def test_call_timeout_raises_call_timeout() -> None:
 
 
 @pytest.mark.anyio
+async def test_server_exit_during_call_raises_server_exited(tmp_path) -> None:
+    pidfile = tmp_path / "server.pid"
+    spec = LaunchSpec(
+        argv=server_argv("bad_dies_after_probes.py"),
+        extra_env={
+            "CARETAKER_TEST_MODE": "call",
+            "CARETAKER_TEST_PIDFILE": str(pidfile),
+        },
+        startup_timeout=2,
+        call_timeout=2,
+        shutdown_grace=2,
+    )
+    session = ServerSession(spec, confirmed=True)
+    caught: list[ServerExited] = []
+    started = time.monotonic()
+    async with session:
+        try:
+            await session.call_tool("echo", {"text": "x"})
+        except ServerExited as exc:
+            caught.append(exc)
+        try:
+            await session.list_tools()
+        except ServerExited as exc:
+            caught.append(exc)
+    assert len(caught) == 2
+    assert all(exc.exit_code == 7 for exc in caught)
+    assert time.monotonic() - started < 5
+    assert session.exited_by_itself is None
+    assert session.exited_before_shutdown is True
+    assert session.temp_dir is not None
+    assert not session.temp_dir.exists()
+    assert pidfile.exists()
+    pid = int(pidfile.read_text(encoding="utf-8"))
+
+    def gone() -> bool:
+        if not psutil.pid_exists(pid):
+            return True
+        try:
+            return psutil.Process(pid).status() == psutil.STATUS_ZOMBIE
+        except psutil.Error:
+            return True
+
+    assert await wait_until(gone, timeout=5.0)
+
+
+@pytest.mark.anyio
 async def test_grandchild_is_killed_on_exit(tmp_path) -> None:
     pidfile = tmp_path / "grandchild.pid"
     spec = LaunchSpec(

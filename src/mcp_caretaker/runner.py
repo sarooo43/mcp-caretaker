@@ -165,7 +165,11 @@ async def run_checks(spec: LaunchSpec, *, confirmed: bool) -> RunResult:
                     raise
                 exit_error = exc
 
-        ctx = replace(ctx, exited_by_itself=session.exited_by_itself)
+        ctx = replace(
+            ctx,
+            exited_by_itself=session.exited_by_itself,
+            exited_before_shutdown=session.exited_before_shutdown,
+        )
         results_by_id["CT-START-005"] = _run_one(
             "CT-START-005",
             STARTUP_CHECK_FUNCTIONS["CT-START-005"],

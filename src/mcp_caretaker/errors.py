@@ -16,14 +16,13 @@ class ConfirmationRequired(CaretakerError):
 
 
 class ServerExited(CaretakerError):
-    """The child exited before the MCP handshake completed."""
+    """The child exited before the handshake or while the session was active."""
 
     def __init__(self, exit_code: int | None, stderr_tail: str = "") -> None:
         self.exit_code = exit_code
         self.stderr_tail = stderr_tail
         super().__init__(
-            f"server exited before the MCP handshake (exit code {exit_code}); "
-            f"stderr tail: {stderr_tail}"
+            f"server exited (exit code {exit_code}); stderr tail: {stderr_tail}"
         )
 
 

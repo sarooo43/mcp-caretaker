@@ -29,6 +29,7 @@ never real secrets.
 | `paginated_server.py` | raw helper | Two `tools/list` pages; page two has a tool with no description |
 | `bad_page_cap.py` | raw helper | More pages than `MAX_TOOLS_PAGES`; the last page is not read |
 | `bad_tools_list_error.py` | raw helper | JSON-RPC error for `tools/list`; zero-tools mode with `CARETAKER_TEST_ZERO_TOOLS` |
+| `bad_dies_after_probes.py` | raw helper | Exits during a call, after `tools/list`, or after the planned probes |
 | `bad_empty_handshake.py` | raw helper | Empty `serverInfo.name` and `serverInfo.version` |
 | `leaky_stdout.py` | raw helper | Non-protocol stdout lines with fake text and a control character |
 | `bad_ignores_stdin_close.py` | raw helper | Keeps running after stdin EOF; records its pid for cleanup tests |

@@ -11,6 +11,7 @@ import json
 import os
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +27,10 @@ def result(mid: Any, value: dict[str, Any]) -> None:
 
 def error(mid: Any, code: int, message: str) -> None:
     send({"jsonrpc": "2.0", "id": mid, "error": {"code": code, "message": message}})
+
+
+def tool_result(text: str, is_error: bool = False) -> dict[str, Any]:
+    return {"content": [{"type": "text", "text": text}], "isError": is_error}
 
 
 def clean_tool(
@@ -47,6 +52,18 @@ def clean_tool(
     }
 
 
+def _log_call(name: str, arguments: dict[str, Any]) -> None:
+    path = os.environ.get("CARETAKER_TEST_CALLLOG")
+    if not path:
+        return
+    args: dict[str, dict[str, Any]] = {}
+    for key, value in arguments.items():
+        length = len(value) if isinstance(value, (str, list, dict)) else None
+        args[str(key)] = {"type": type(value).__name__, "length": length}
+    with Path(path).open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps({"tool": name, "args": args}) + "\n")
+
+
 def serve(
     *,
     pages: list[dict[str, Any]] | None = None,
@@ -56,6 +73,12 @@ def serve(
     tools_error: dict[str, Any] | None = None,
     ignore_stdin_close: bool = False,
     pidfile: str | None = None,
+    on_call: Callable[
+        [str, dict[str, Any]],
+        dict[str, Any] | tuple[dict[str, Any], bool] | None,
+    ]
+    | None = None,
+    exit_after_list: bool = False,
 ) -> None:
     """Serve one raw stdio session using only fixed fixture choices."""
     if pidfile is not None:
@@ -88,6 +111,8 @@ def serve(
                 },
             )
         elif method == "tools/list":
+            if exit_after_list:
+                os._exit(7)
             if tools_error is not None:
                 error(
                     mid,
@@ -97,6 +122,21 @@ def serve(
             else:
                 index = int(params.get("cursor") or 0)
                 result(mid, chosen_pages[min(index, len(chosen_pages) - 1)])
+        elif method == "tools/call":
+            name = str(params.get("name", ""))
+            raw_args = params.get("arguments")
+            arguments = raw_args if isinstance(raw_args, dict) else {}
+            _log_call(name, arguments)
+            answer = on_call(name, arguments) if on_call is not None else None
+            die_after_reply = False
+            if isinstance(answer, tuple):
+                answer, die_after_reply = answer
+            if answer is None:
+                answer = tool_result("invalid input", is_error=True)
+            result(mid, answer)
+            if die_after_reply:
+                time.sleep(0.2)
+                os._exit(7)
         elif method == "ping":
             result(mid, {})
         else:

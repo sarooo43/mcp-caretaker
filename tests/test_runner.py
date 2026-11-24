@@ -341,3 +341,20 @@ async def test_server_that_ignores_stdin_close_warns_start_005_and_is_killed(
             return True
 
     assert await wait_until(gone, timeout=5.0)
+
+
+@pytest.mark.anyio
+async def test_start_005_is_not_tested_when_server_exited_before_shutdown() -> None:
+    run = await run_checks(
+        _spec(
+            "bad_dies_after_probes.py",
+            extra_env={"CARETAKER_TEST_MODE": "list"},
+            startup_timeout=2,
+            call_timeout=2,
+            shutdown_grace=2,
+        ),
+        confirmed=True,
+    )
+    result = _by_id(run)["CT-START-005"]
+    assert result.verdict is Verdict.NOT_TESTED
+    assert result.reason == "server had already exited before shutdown"

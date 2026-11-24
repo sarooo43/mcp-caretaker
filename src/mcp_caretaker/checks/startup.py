@@ -24,6 +24,7 @@ class StartupContext:
     stdout_noise_count: int = 0
     stdout_noise: tuple[str, ...] = ()
     exited_by_itself: bool | None = None
+    exited_before_shutdown: bool = False
 
 
 def _make(
@@ -161,11 +162,16 @@ def check_start_004(ctx: StartupContext) -> CheckResult:
 
 def check_start_005(ctx: StartupContext) -> CheckResult:
     if ctx.exited_by_itself is None:
+        reason = (
+            "server had already exited before shutdown"
+            if ctx.exited_before_shutdown
+            else "session did not start or outcome is unknown"
+        )
         return _make(
             "CT-START-005",
             Verdict.NOT_TESTED,
             "Server exit outcome was not recorded.",
-            reason="session did not start or outcome is unknown",
+            reason=reason,
         )
     if ctx.exited_by_itself:
         return _make(
