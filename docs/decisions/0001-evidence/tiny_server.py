@@ -4,7 +4,6 @@ import json
 import os
 import subprocess
 import sys
-import time
 
 from mcp.server.mcpserver import MCPServer
 from mcp_types import ToolAnnotations
@@ -52,12 +51,6 @@ def spawn_grandchild() -> str:
         with open(pidfile, "w", encoding="utf-8") as handle:
             handle.write(str(child.pid))
     return str(child.pid)
-
-
-@server.tool(description="Sleep for a while.")
-def sleep(seconds: float) -> str:
-    time.sleep(seconds)
-    return "done"
 
 
 if __name__ == "__main__":

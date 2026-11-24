@@ -1,24 +1,18 @@
-OS: linux; Python: 3.11.2
 env=None handshake: 2025-11-25
-env=None readOnlyHint: [('echo', True), ('add', True), ('env_names', None), ('cwd', None),
-  ('shout_env', None), ('spawn_grandchild', None), ('sleep', None)]
-env=None child env NAMES: ['CARETAKER_PIDFILE', 'HOME', 'LC_CTYPE', 'LOGNAME', 'PATH', 'SHELL', 'USER']
+env=None readOnlyHint: [('echo', True), ('add', True), ('env_names', None), ('cwd', None), ('shout_env', None), ('spawn_grandchild', None)]
+env=None child env NAMES: ["CARETAKER_PIDFILE", "HOME", "LC_CTYPE", "LOGNAME", "PATH", "SHELL", "USER"]
 env=None child cwd is temp dir: True
 env=None wrong-typed args sent, isError: True
 env=None unknown tool sent, isError: True
 env=None grandchild alive inside: True
 env=None grandchild alive AFTER context exit: True
-env=None stderr file lines: ['SHOUT=<missing>', "Tool 'add' rejected arguments: ['a']",
-  "Tool 'no_such_tool' failed: 'Unknown tool: no_such_tool'"]
+env=None stderr file lines: ['SHOUT=<missing>', "Tool 'add' rejected arguments: ['a']", "Tool 'no_such_tool' failed: 'Unknown tool: no_such_tool'"]
 env=given handshake: 2025-11-25
-env=given readOnlyHint: [('echo', True), ('add', True), ('env_names', None), ('cwd', None),
-  ('shout_env', None), ('spawn_grandchild', None), ('sleep', None)]
-env=given child env NAMES: ['CARETAKER_PIDFILE', 'HOME', 'LC_CTYPE', 'LOGNAME', 'PATH', 'SHELL',
-  'T0_EXTRA', 'T0_FAKE_SECRET', 'USER']
+env=given readOnlyHint: [('echo', True), ('add', True), ('env_names', None), ('cwd', None), ('shout_env', None), ('spawn_grandchild', None)]
+env=given child env NAMES: ["CARETAKER_PIDFILE", "HOME", "LC_CTYPE", "LOGNAME", "PATH", "SHELL", "T0_EXTRA", "T0_FAKE_SECRET", "USER"]
 env=given child cwd is temp dir: True
 env=given wrong-typed args sent, isError: True
 env=given unknown tool sent, isError: True
 env=given grandchild alive inside: True
 env=given grandchild alive AFTER context exit: True
-env=given stderr file lines: ['SHOUT=FAKE-TOKEN-NOT-REAL-1234', "Tool 'add' rejected arguments: ['a']",
-  "Tool 'no_such_tool' failed: 'Unknown tool: no_such_tool'"]
+env=given stderr file lines: ['SHOUT=FAKE-TOKEN-NOT-REAL-1234', "Tool 'add' rejected arguments: ['a']", "Tool 'no_such_tool' failed: 'Unknown tool: no_such_tool'"]

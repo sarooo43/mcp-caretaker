@@ -1,8 +1,7 @@
-OS: linux; Python: 3.11.2
 spawned in own session/group: True
 SDK ClientSession handshake over our streams: 2025-11-25
+readOnlyHint over our streams: [('echo', True), ('add', True), ('env_names', None), ('cwd', None), ('shout_env', None), ('spawn_grandchild', None)]
 child env NAMES: ["CARETAKER_PIDFILE", "LC_CTYPE", "PATH", "TEMP", "TMP", "TMPDIR"]
 grandchild alive inside: True
 grandchild alive AFTER group kill: False
-(LC_CTYPE is added by CPython itself at interpreter startup, not by the launcher;
-see docs/decisions/0002-child-environment.md.)
+direct child returncode after group kill: -15

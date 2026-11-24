@@ -1,13 +1,12 @@
-"""T0 evidence: our own spawn + SDK ClientSession over memory object streams."""
+"""T0 evidence: SDK ClientSession over our own stripped spawn.
 
-import os
-import pathlib
-import signal
-import sys
-import tempfile
+The SDK session lives in a runner task; that keeps its cancel scopes out of the
+caller task. The runner deliberately does NOT close stdin before the process-group
+kill, so this isolates tree-kill, not graceful shutdown, on Linux.
+"""
 
-import anyio
-import psutil
+import os, pathlib, signal, sys, tempfile
+import anyio, psutil
 from anyio.streams.text import TextReceiveStream
 from mcp import ClientSession
 from mcp.shared.message import SessionMessage
@@ -22,56 +21,66 @@ def stripped(tmp):
     return env
 
 
+async def reader(proc, rs):
+    buf = ""
+    async with rs:
+        async for chunk in TextReceiveStream(proc.stdout, encoding="utf-8", errors="replace"):
+            lines = (buf + chunk).split("\n"); buf = lines.pop()
+            for line in lines:
+                if line.strip():
+                    await rs.send(SessionMessage(jsonrpc_message_adapter.validate_json(line, by_name=False)))
+
+
+async def writer(proc, wr):
+    async with wr:
+        async for msg in wr:
+            await proc.stdin.send((msg.message.model_dump_json(by_alias=True, exclude_unset=True) + "\n").encode())
+
+
+async def client_runner(rr, ws, ready, stop, gpid_out):
+    async with ClientSession(rr, ws) as client:
+        print("SDK ClientSession handshake over our streams:", (await client.initialize()).protocol_version)
+        tools = await client.list_tools()
+        print("readOnlyHint over our streams:", [(t.name, (t.annotations.read_only_hint if t.annotations else None)) for t in tools.tools])
+        r = await client.call_tool("env_names")
+        print("child env NAMES:", "".join(b.text for b in r.content))
+        r = await client.call_tool("spawn_grandchild")
+        gpid = int("".join(b.text for b in r.content))
+        gpid_out.append(gpid)
+        print("grandchild alive inside:", psutil.pid_exists(gpid))
+        ready.set()
+        await stop.wait()
+
+
 async def main():
     tmp = pathlib.Path(tempfile.mkdtemp(prefix="t0-fallback-"))
-    errfile = tmp / "stderr.bin"
-    errlog = errfile.open("wb")
+    errlog = (tmp / "stderr.bin").open("wb")
     proc = await anyio.open_process([sys.executable, TINY], env=stripped(tmp), cwd=str(tmp),
                                     stderr=errlog, start_new_session=True)
     print("spawned in own session/group:", proc.pid == os.getpgid(proc.pid))
     rs, rr = anyio.create_memory_object_stream[SessionMessage | Exception](0)
     ws, wr = anyio.create_memory_object_stream[SessionMessage](0)
-
-    async def reader():
-        buf = ""
-        async with rs:
-            async for chunk in TextReceiveStream(proc.stdout, encoding="utf-8", errors="replace"):
-                lines = (buf + chunk).split("\n")
-                buf = lines.pop()
-                for line in lines:
-                    if line.strip():
-                        await rs.send(SessionMessage(jsonrpc_message_adapter.validate_json(line, by_name=False)))
-
-    async def writer():
-        async with wr:
-            async for msg in wr:
-                await proc.stdin.send((msg.message.model_dump_json(by_alias=True, exclude_unset=True) + "\n").encode())
-
-    tg = anyio.create_task_group()
-    await tg.__aenter__()
-    tg.start_soon(reader)
-    tg.start_soon(writer)
-    client = ClientSession(rr, ws)
-    await client.__aenter__()
-    init = await client.initialize()
-    print("SDK ClientSession handshake over our streams:", init.protocol_version)
-    r = await client.call_tool("env_names")
-    print("child env NAMES:", "".join(b.text for b in r.content))
-    r = await client.call_tool("spawn_grandchild")
-    gpid = int("".join(b.text for b in r.content))
-    print("grandchild alive inside:", psutil.pid_exists(gpid))
-    await client.__aexit__(None, None, None)
-    tg.cancel_scope.cancel()
-    await tg.__aexit__(None, None, None)
-    with anyio.move_on_after(2):
+    ready, stop = anyio.Event(), anyio.Event()
+    gpid_out = []
+    async with anyio.create_task_group() as tg:
+        tg.start_soon(reader, proc, rs)
+        tg.start_soon(writer, proc, wr)
+        tg.start_soon(client_runner, rr, ws, ready, stop, gpid_out)
+        await ready.wait()
+        stop.set()
+        tg.cancel_scope.cancel()
+    gpid = gpid_out[0]
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        try: os.killpg(proc.pid, sig)
+        except ProcessLookupError: pass
+    with anyio.move_on_after(3):
+        while psutil.pid_exists(gpid):
+            await anyio.sleep(0.01)
+    with anyio.move_on_after(3):
         while proc.returncode is None:
             await anyio.sleep(0.01)
-    for sig in (signal.SIGTERM, signal.SIGKILL):
-        try:
-            os.killpg(proc.pid, sig)
-        except ProcessLookupError:
-            pass
     print("grandchild alive AFTER group kill:", psutil.pid_exists(gpid))
+    print("direct child returncode after group kill:", proc.returncode)
     errlog.close()
 
 
