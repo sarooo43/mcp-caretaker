@@ -48,7 +48,11 @@ def clean_tool(
     return {
         "name": name,
         "description": description,
-        "inputSchema": {"type": "object", "properties": properties},
+        "inputSchema": {
+            "type": "object",
+            "properties": properties,
+            "required": list(properties),
+        },
     }
 
 

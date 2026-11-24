@@ -10,9 +10,11 @@ in `argv` are not rewritten by the launcher, so use absolute paths.
 `_raw_tools.py` is a standard-library-only helper. It writes line-delimited
 JSON-RPC on stdout and lets a fixture choose raw `tools/list` pages. This keeps
 wire text available to the bounded bridge tap even when the SDK's own objects
-would drop or reject it. No server text is executed, used as a path, or sent to a
-network. Fake text values passed through `extra_env` are obvious test strings,
-never real secrets.
+would drop or reject it. It also supports an optional `on_call` handler. When
+`CARETAKER_TEST_CALLLOG` is set, it appends JSON lines containing only
+`{tool,args:{key:{type,length}}}`; argument values are never written. No server
+text is executed, used as a path, or sent to a network. Fake text values passed
+through `extra_env` are obvious test strings, never real secrets.
 
 | Fixture | Source | What it exercises |
 | --- | --- | --- |
@@ -30,6 +32,14 @@ never real secrets.
 | `bad_page_cap.py` | raw helper | More pages than `MAX_TOOLS_PAGES`; the last page is not read |
 | `bad_tools_list_error.py` | raw helper | JSON-RPC error for `tools/list`; zero-tools mode with `CARETAKER_TEST_ZERO_TOOLS` |
 | `bad_dies_after_probes.py` | raw helper | Exits during a call, after `tools/list`, or after the planned probes |
+| `bad_wrong_type.py` | raw helper | Accepts, delays, or exits during a wrong-type call |
+| `bad_missing_required.py` | raw helper | Accepts or exits during a missing-required call |
+| `bad_unknown_tool.py` | raw helper | Accepts or exits during the unknown-tool call |
+| `bad_huge_input.py` | raw helper | Delays or exits during the large-string call |
+| `bad_valid_call.py` | raw helper | Rejects or exits during the generated valid call |
+| `recording_server.py` | raw helper | Records call shapes for one writer and one read-only tool |
+| `only_writers_server.py` | raw helper | Writer tools only; large and valid calls are not tested |
+| `complex_schema_server.py` | raw helper | Read-only tool with a pattern constraint |
 | `bad_empty_handshake.py` | raw helper | Empty `serverInfo.name` and `serverInfo.version` |
 | `leaky_stdout.py` | raw helper | Non-protocol stdout lines with fake text and a control character |
 | `bad_ignores_stdin_close.py` | raw helper | Keeps running after stdin EOF; records its pid for cleanup tests |
