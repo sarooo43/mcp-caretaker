@@ -1,0 +1,9 @@
+M1 huge to all tools: mutation 1 failed in 0.61s; restored 1 passed in 0.59s; diff empty
+M2 valid to all tools: mutation 1 failed in 0.59s; restored 1 passed in 0.63s; diff empty
+M3 success wrong-type as PASS: mutation 1 failed in 0.61s; restored 1 passed in 0.59s; diff empty
+M4 exited as PASS: mutation 1 failed in 0.60s; restored 1 passed in 0.56s; diff empty
+M5 ignore budget: mutation 1 failed in 0.62s; restored 1 passed in 0.57s; diff empty
+M6 final liveness always PASS: mutation 1 failed in 0.83s; restored 1 passed in 0.83s; diff empty
+M7 omit replay: mutation 1 failed in 0.63s; restored 1 passed in 0.57s; diff empty
+restored full suite: 103 passed in 33.13s
+ALL LOCAL MUTATIONS PROVEN
