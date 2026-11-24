@@ -10,11 +10,13 @@ in `argv` are not rewritten by the launcher, so use absolute paths.
 `_raw_tools.py` is a standard-library-only helper. It writes line-delimited
 JSON-RPC on stdout and lets a fixture choose raw `tools/list` pages. This keeps
 wire text available to the bounded bridge tap even when the SDK's own objects
-would drop or reject it. It also supports an optional `on_call` handler. When
-`CARETAKER_TEST_CALLLOG` is set, it appends JSON lines containing only
-`{tool,args:{key:{type,length}}}`; argument values are never written. No server
-text is executed, used as a path, or sent to a network. Fake text values passed
-through `extra_env` are obvious test strings, never real secrets.
+would drop or reject it. It also supports an optional `on_call` handler,
+handshake instructions, call-level JSON-RPC errors with `data`, stdout noise,
+and stderr lines. When `CARETAKER_TEST_CALLLOG` is set, it appends JSON lines
+containing only `{tool,args:{key:{type,length}}}`; argument values are never
+written. No server text is executed, used as a path, or sent to a network. Fake
+text values passed through `extra_env` are obvious test strings, never real
+secrets. Findings are facts, not verdicts of intent.
 
 | Fixture | Source | What it exercises |
 | --- | --- | --- |
@@ -48,6 +50,8 @@ through `extra_env` are obvious test strings, never real secrets.
 | `spawns_grandchild.py` | official SDK | PR 1 process-tree fixture, still used by existing tests |
 | `bad_exits_immediately.py` | standard library | PR 1 startup fixture reused for CT-START-001 |
 | `bad_hangs_on_startup.py` | standard library | PR 1 startup fixture reused for CT-START-001 |
+| `bad_canary_leaks.py` | raw helper | One fake value in a chosen answer, listing, handshake, stderr, or stdout mode |
+| `bad_rug_pull.py` | raw helper | Reconnect and after-call tool-field changes, added or removed tools, and reordered tools |
 
 The check results are returned only as library objects. There is no report file,
 no score, no grade, and no command line check command yet. See `docs/checks/`.

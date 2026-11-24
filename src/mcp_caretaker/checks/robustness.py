@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -601,9 +601,18 @@ async def run_robustness_checks(
     session: ServerSession,
     tools: list[dict[str, Any]],
     extra_env: Mapping[str, str],
-) -> dict[str, CheckResult]:
-    """Run fixed-order probes and return one result per robustness ID."""
+    answer_hook: Callable[[str, Any, str], None] | None = None,
+) -> tuple[dict[str, CheckResult], tuple[dict[str, Any], ...] | None]:
+    """Run fixed-order probes and expose the final liveness raw page slice."""
     started = time.monotonic()
+    final_pages: list[dict[str, Any]] = []
+
+    async def liveness_with_pages() -> tuple[str, Any]:
+        before = len(session.raw_tools_pages)
+        outcome, answer = await _liveness(session)
+        final_pages[:] = session.raw_tools_pages[before:] if outcome == "pass" else []
+        return outcome, answer
+
     try:
         plans = plan_probes(tools)
         records: list[ProbeRecord] = []
@@ -618,7 +627,7 @@ async def run_robustness_checks(
                 records.append(_skip_record(plan, plan.skipped_reason))
                 continue
             if plan.kind == "liveness":
-                outcome, answer = await _liveness(session)
+                outcome, answer = await liveness_with_pages()
                 records.append(
                     _probe_record(
                         plan, outcome, answer if outcome == "fail" else None, extra_env
@@ -626,9 +635,17 @@ async def run_robustness_checks(
                 )
                 continue
             outcome, answer = await _call_once(session, plan)
+            if answer_hook is not None:
+                replay = replay_line(
+                    plan.tool_name,
+                    plan.arguments or {},
+                    extra_env,
+                    plan.huge_property,
+                )
+                answer_hook(outcome, answer, replay)
             records.append(_probe_record(plan, outcome, answer, extra_env))
             if outcome in ("no_answer", "exited"):
-                live_outcome, live_answer = await _liveness(session)
+                live_outcome, live_answer = await liveness_with_pages()
                 if live_outcome == "fail":
                     live_plan = ProbePlan("CT-ROB-006", "liveness", "tools/list", -1)
                     records.append(
@@ -640,8 +657,9 @@ async def run_robustness_checks(
                         if item.kind != "liveness"
                     )
                     break
-        return aggregate_results(records)
+        pages = tuple(final_pages) if final_pages else None
+        return aggregate_results(records), pages
     except BaseException as exc:
         if _is_cancelled(exc):
             raise
-        return _internal_error_results(exc)
+        return _internal_error_results(exc), None

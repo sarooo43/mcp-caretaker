@@ -1,8 +1,18 @@
-"""Registry for the three check groups. No CLI or report layer here."""
+"""Registry for the five check groups. No CLI or report layer here."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+
+CANARY_IDS = (
+    "CT-CANARY-001",
+    "CT-CANARY-002",
+    "CT-CANARY-003",
+)
+STABILITY_IDS = (
+    "CT-STAB-001",
+    "CT-STAB-002",
+)
 
 
 @dataclass(frozen=True)
@@ -131,9 +141,46 @@ CHECKS: tuple[CheckInfo, ...] = (
         "Server remains responsive after probes",
         "docs/checks/CT-ROB-006.md",
     ),
+    CheckInfo(
+        "CT-CANARY-001",
+        "canary",
+        "Canary values are absent from tool answers",
+        "docs/checks/CT-CANARY-001.md",
+    ),
+    CheckInfo(
+        "CT-CANARY-002",
+        "canary",
+        "Canary values are absent from handshake and tool listings",
+        "docs/checks/CT-CANARY-002.md",
+    ),
+    CheckInfo(
+        "CT-CANARY-003",
+        "canary",
+        "Canary values are absent from stderr and stray stdout",
+        "docs/checks/CT-CANARY-003.md",
+    ),
+    CheckInfo(
+        "CT-STAB-001",
+        "stability",
+        "Tool listings are stable across a second session",
+        "docs/checks/CT-STAB-001.md",
+    ),
+    CheckInfo(
+        "CT-STAB-002",
+        "stability",
+        "Tool listing is stable after probes",
+        "docs/checks/CT-STAB-002.md",
+    ),
 )
 
 CHECK_IDS: tuple[str, ...] = tuple(item.id for item in CHECKS)
 CHECK_BY_ID: dict[str, CheckInfo] = {item.id: item for item in CHECKS}
 
-__all__ = ["CHECKS", "CHECK_BY_ID", "CHECK_IDS", "CheckInfo"]
+__all__ = [
+    "CANARY_IDS",
+    "CHECKS",
+    "CHECK_BY_ID",
+    "CHECK_IDS",
+    "STABILITY_IDS",
+    "CheckInfo",
+]
