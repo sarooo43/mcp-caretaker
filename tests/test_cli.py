@@ -576,8 +576,10 @@ def _assert_version_output(completed: subprocess.CompletedProcess[bytes]) -> str
     stdout = completed.stdout.decode("utf-8", errors="replace")
     assert completed.returncode == 0
     assert completed.stderr == b""
-    assert stdout.endswith("\n") and stdout.count("\n") == 1
-    name, version = stdout.rstrip("\n").split(" ", 1)
+    assert stdout.endswith("\n")
+    lines = stdout.splitlines()
+    assert len(lines) == 1
+    name, version = lines[0].split(" ", 1)
     assert name == "mcp-caretaker"
     assert version == __version__
     return version
