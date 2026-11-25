@@ -24,6 +24,7 @@ from mcp_caretaker.thresholds import (
     PROBE_BUDGET_SECONDS,
     REPLAY_MAX_CHARS,
     SHUTDOWN_GRACE_SECONDS,
+    STDERR_SCAN_MAX_BYTES,
     WHITESPACE_RUN_LIMIT,
 )
 
@@ -52,6 +53,15 @@ ROB_IDS = (
     "CT-ROB-005",
     "CT-ROB-006",
 )
+CANARY_IDS = (
+    "CT-CANARY-001",
+    "CT-CANARY-002",
+    "CT-CANARY-003",
+)
+STAB_IDS = (
+    "CT-STAB-001",
+    "CT-STAB-002",
+)
 
 
 def test_registry_lists_all_14_check_ids_in_order() -> None:
@@ -63,14 +73,16 @@ def test_verdict_values_are_exactly_four_strings() -> None:
     assert [item.value for item in Verdict] == ["pass", "warn", "fail", "not_tested"]
 
 
-def test_registry_lists_all_20_check_ids_in_order() -> None:
-    assert CHECK_IDS == PR2_IDS + ROB_IDS
-    assert len(set(CHECK_IDS)) == len(CHECKS) == 20
+def test_registry_lists_all_25_check_ids_in_order() -> None:
+    assert CHECK_IDS == PR2_IDS + ROB_IDS + CANARY_IDS + STAB_IDS
+    assert len(set(CHECK_IDS)) == len(CHECKS) == 25
     assert all(info.docs_path.startswith("docs/checks/") for info in CHECKS)
     assert {info.group for info in CHECKS} == {
         "startup",
         "description/schema basics",
         "robustness",
+        "canary",
+        "stability",
     }
 
 
@@ -176,8 +188,9 @@ def test_threshold_constants_have_expected_values_and_comments() -> None:
     assert MAX_TOOLS_PROBED == 50
     assert PROBE_BUDGET_SECONDS == 120
     assert REPLAY_MAX_CHARS == 2000
+    assert STDERR_SCAN_MAX_BYTES == 1_048_576
     source = (ROOT / "src/mcp_caretaker/thresholds.py").read_text(encoding="utf-8")
-    assert source.count("Guessed") >= 11
+    assert source.count("Guessed") >= 12
 
 
 def test_pyproject_runtime_dependencies_are_unchanged() -> None:

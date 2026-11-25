@@ -20,7 +20,7 @@ import signal
 import sys
 import tempfile
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -53,13 +53,17 @@ _STDOUT_NOISE_CHARS = 200
 
 @dataclass
 class _BridgeTap:
-    """Keep only raw tools/list results and a capped view of stdout noise."""
+    """Keep raw first-connection pages and a capped view of stdout noise."""
 
     raw_tools_pages: list[dict[str, Any]] = field(default_factory=list)
+    raw_initialize_result: dict[str, Any] | None = None
     stdout_noise: list[str] = field(default_factory=list)
     stdout_noise_count: int = 0
     tools_list_error: str | None = None
+    noise_observer: Callable[[str], None] | None = None
     _tools_list_ids: set[Any] = field(default_factory=set)
+    _initialize_id: Any = None
+    _initialize_pending: bool = False
 
     def reset_tools_list_error(self) -> None:
         self.tools_list_error = None
@@ -69,9 +73,13 @@ class _BridgeTap:
             obj = json.loads(data)
         except (ValueError, TypeError, UnicodeDecodeError):
             return
-        if isinstance(obj, dict) and obj.get("method") == "tools/list" and "id" in obj:
-            with suppress(TypeError):
-                self._tools_list_ids.add(obj["id"])
+        if isinstance(obj, dict) and "id" in obj:
+            if obj.get("method") == "tools/list":
+                with suppress(TypeError):
+                    self._tools_list_ids.add(obj["id"])
+            elif obj.get("method") == "initialize":
+                self._initialize_id = obj["id"]
+                self._initialize_pending = True
 
     def inspect_line(self, line: str) -> SessionMessage | None:
         try:
@@ -81,6 +89,11 @@ class _BridgeTap:
             return None
         if isinstance(obj, dict):
             mid = obj.get("id")
+            if self._initialize_pending and mid == self._initialize_id:
+                self._initialize_pending = False
+                initialize_result = obj.get("result")
+                if isinstance(initialize_result, dict):
+                    self.raw_initialize_result = initialize_result
             try:
                 tracked = mid in self._tools_list_ids
             except TypeError:
@@ -107,6 +120,8 @@ class _BridgeTap:
             return None
 
     def _add_noise(self, line: str) -> None:
+        if self.noise_observer is not None:
+            self.noise_observer(line)
         self.stdout_noise_count += 1
         if len(self.stdout_noise) < _STDOUT_NOISE_LINES:
             self.stdout_noise.append(line[:_STDOUT_NOISE_CHARS])
@@ -204,6 +219,23 @@ def _group_alive(pgid: int) -> bool:
     return True
 
 
+async def remove_temp_area(path: Path | None) -> None:
+    """Delete a temp area, retrying late Windows handle release for five seconds."""
+    if path is None:
+        return
+    if sys.platform == "win32":
+        deadline = time.monotonic() + 5.0
+        while True:
+            try:
+                shutil.rmtree(path)
+                return
+            except OSError:
+                if time.monotonic() >= deadline:
+                    return
+                await anyio.sleep(0.1)
+    shutil.rmtree(path, ignore_errors=True)
+
+
 class ServerSession:
     """Async context manager for one confirmed local MCP server session.
 
@@ -211,10 +243,20 @@ class ServerSession:
     ``ConfirmationRequired`` before any temp folder is created or process spawned.
     """
 
-    def __init__(self, spec: LaunchSpec, *, confirmed: bool) -> None:
+    def __init__(
+        self,
+        spec: LaunchSpec,
+        *,
+        confirmed: bool,
+        temp_area: Path | None = None,
+        stderr_name: str = "stderr.log",
+    ) -> None:
         if confirmed is not True:
             raise ConfirmationRequired("launching a server requires confirmed=True")
         self.spec = spec
+        self._owns_temp_area = temp_area is None
+        self._external_temp_area = temp_area
+        self._stderr_name = stderr_name
         self.initialize_result: Any = None
         self.exit_code: int | None = None
         self.exited_by_itself: bool | None = None
@@ -255,6 +297,15 @@ class ServerSession:
         return self._tap.raw_tools_pages
 
     @property
+    def raw_initialize_result(self) -> dict[str, Any] | None:
+        """Raw first-connection initialize result, when the tap saw one."""
+        return self._tap.raw_initialize_result
+
+    def set_noise_observer(self, observer: Callable[[str], None]) -> None:
+        """Observe each full stray stdout line before the bounded display."""
+        self._tap.noise_observer = observer
+
+    @property
     def stdout_noise(self) -> list[str]:
         """Up to five non-protocol stdout lines, each cut at 200 characters."""
         return self._tap.stdout_noise
@@ -268,11 +319,6 @@ class ServerSession:
     def tools_list_error(self) -> str | None:
         """A capped JSON-RPC error message for a tapped tools/list response."""
         return self._tap.tools_list_error
-
-    @property
-    def child_pid(self) -> int | None:
-        """Child pid while the process object exists."""
-        return getattr(self._process, "pid", None)
 
     @property
     def stderr_text(self) -> str:
@@ -324,6 +370,23 @@ class ServerSession:
             data.decode("utf-8", errors="replace"), self.spec.extra_env
         )
 
+    def read_stderr_prefix(self, limit: int) -> tuple[str, int, bool] | None:
+        """Read raw stderr from the start, up to limit, if the file is readable."""
+        if self._stderr_path is None:
+            return None
+        if self._errlog is not None:
+            with suppress(Exception):
+                self._errlog.flush()
+        try:
+            with self._stderr_path.open("rb") as handle:
+                handle.seek(0, 2)
+                size = handle.tell()
+                handle.seek(0)
+                data = handle.read(limit)
+        except OSError:
+            return None
+        return data.decode("utf-8", errors="replace"), len(data), size > limit
+
     def _safe(self, text: str) -> str:
         """Never let a secret value into an error message."""
         return redact_values(text, self.spec.extra_env)
@@ -331,10 +394,14 @@ class ServerSession:
     async def __aenter__(self) -> Self:
         if self._temp_area is not None or self._cleaned:
             raise CaretakerError("a ServerSession can only be entered once")
-        self._temp_area = Path(tempfile.mkdtemp(prefix="mcp-caretaker-"))
+        if self._external_temp_area is None:
+            self._temp_area = Path(tempfile.mkdtemp(prefix="mcp-caretaker-"))
+        else:
+            self._temp_area = Path(self._external_temp_area)
+            self._temp_area.mkdir(parents=True, exist_ok=True)
         self._workdir = self._temp_area / "cwd"
-        self._workdir.mkdir()
-        self._stderr_path = self._temp_area / "stderr.log"
+        self._workdir.mkdir(exist_ok=True)
+        self._stderr_path = self._temp_area / self._stderr_name
         self._errlog = self._stderr_path.open("wb")
         try:
             await self._start()
@@ -561,9 +628,10 @@ class ServerSession:
                     self._errlog.close()
                 self._errlog = None
 
-            # Cache stderr BEFORE deleting the temp area, so it survives cleanup.
+            # Cache stderr before a caller-owned folder is removed by run_checks.
             self._refresh_stderr()
-            await self._remove_temp_area()
+            if self._owns_temp_area:
+                await remove_temp_area(self._temp_area)
 
         if self._task_group is not None:
             # Fallback to guarantee the runner and bridge tasks stop even if a
@@ -613,19 +681,3 @@ class ServerSession:
         with anyio.move_on_after(2.0):
             while process.returncode is None:
                 await anyio.sleep(0.01)
-
-    async def _remove_temp_area(self) -> None:
-        if self._temp_area is None:
-            return
-        if sys.platform == "win32":
-            # Handles can be released late on Windows; retry for up to 5 seconds.
-            deadline = time.monotonic() + 5.0
-            while True:
-                try:
-                    shutil.rmtree(self._temp_area)
-                    return
-                except OSError:
-                    if time.monotonic() >= deadline:
-                        return
-                    await anyio.sleep(0.1)
-        shutil.rmtree(self._temp_area, ignore_errors=True)

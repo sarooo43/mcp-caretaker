@@ -22,3 +22,5 @@ MAX_TOOLS_PROBED = 50
 PROBE_BUDGET_SECONDS = 120
 # Guessed cap on a constructed replay line; docs say it is a guess.
 REPLAY_MAX_CHARS = 2000
+# Guessed cap on stderr bytes scanned from the start; docs say it is a guess.
+STDERR_SCAN_MAX_BYTES = 1_048_576
