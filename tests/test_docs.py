@@ -38,19 +38,25 @@ def test_new_docs_have_no_dates_or_chained_shell_commands() -> None:
         ROOT / "docs/checks/README.md",
         ROOT / "docs/gallery.md",
         ROOT / "docs/limitations.md",
+        ROOT / "docs/RELEASING.md",
         *(ROOT / info.docs_path for info in CHECKS),
     ]
     joined = "\n".join(path.read_text(encoding="utf-8") for path in paths)
     assert not re.search(r"\b20\d{2}-\d{2}-\d{2}\b", joined)
     assert "&&" not in joined
-    for word in (
-        "malicious",
-        "vulnerable",
-        "attack",
-        "exploit",
-        "unsafe",
-    ):
+    for word in BANNED_WORDS:
         assert word not in joined.lower()
+
+
+def test_decisions_and_releasing_avoid_banned_words() -> None:
+    paths = [
+        ROOT / "docs/RELEASING.md",
+        *sorted((ROOT / "docs/decisions").glob("*.md")),
+    ]
+    for path in paths:
+        text = path.read_text(encoding="utf-8").lower()
+        for word in BANNED_WORDS:
+            assert word not in text, f"{path.name} contains {word}"
 
 
 def test_thresholds_are_documented_as_guesses() -> None:

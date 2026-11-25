@@ -19,7 +19,7 @@ Set an env variable named `CARETAKER_CANARY_TOKEN` to any value.
 Start one fixture server with one shell command per line.
 
 ```sh
-python examples/servers/bad_canary_leaks.py tool_description
+python examples/servers/bad_canary_leaks.py server_name
 ```
 
 Send this constructed replay line after an initialize handshake.

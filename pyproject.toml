@@ -4,13 +4,22 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-caretaker"
-version = "0.0.0.dev0"
+dynamic = ["version"]
 description = "Runtime behaviour tester for local MCP servers over stdio (pre-release skeleton)."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Saboor Nasar" }]
-dependencies = ["mcp==2.3.0", "mcp-types==2.3.0"]
+dependencies = ["mcp>=2.3.0,<2.4", "mcp-types>=2.3.0,<2.4"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Testing",
+]
 
 [project.optional-dependencies]
 dev = [
@@ -25,7 +34,11 @@ mcp-caretaker = "mcp_caretaker.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/sarooo43/mcp-caretaker"
-Repository = "https://github.com/sarooo43/mcp-caretaker"
+Source = "https://github.com/sarooo43/mcp-caretaker"
+Issues = "https://github.com/sarooo43/mcp-caretaker/issues"
+
+[tool.hatch.version]
+path = "src/mcp_caretaker/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mcp_caretaker"]

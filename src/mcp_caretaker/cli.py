@@ -14,6 +14,7 @@ import sys
 from dataclasses import fields
 from pathlib import Path
 
+from . import __version__
 from .checks import CHECKS
 from .launch import LaunchSpec, redact_values
 from .report import (
@@ -101,6 +102,9 @@ def split_server_command(rest: list[str]) -> tuple[list[str], list[str]] | None:
 def main(argv: list[str] | None = None) -> int:
     """Run the check command; return 0, 1, or 2 as documented."""
     args = list(sys.argv[1:] if argv is None else argv)
+    if args == ["--version"]:
+        print(f"mcp-caretaker {__version__}")
+        return 0
     if not args or args[0] != "check":
         print(USAGE, file=sys.stderr)
         return 2

@@ -558,8 +558,8 @@ def test_console_command_runs_clean_server(tmp_path: Path) -> None:
     assert sum(report["counts"].values()) == 25
 
 
-def test_bare_invocations_print_usage_on_stderr_and_exit_2() -> None:
-    for args in ([], ["check"]):
+def test_bare_and_unknown_invocations_print_usage_on_stderr_and_exit_2() -> None:
+    for args in ([], ["check"], ["unknown-command"]):
         completed = subprocess.run(
             [sys.executable, "-m", "mcp_caretaker", *args],
             capture_output=True,
@@ -569,3 +569,51 @@ def test_bare_invocations_print_usage_on_stderr_and_exit_2() -> None:
         assert completed.returncode == 2
         assert completed.stdout == b""
         assert b"usage: mcp-caretaker check" in completed.stderr
+
+
+def _assert_version_output(completed: subprocess.CompletedProcess[bytes]) -> str:
+    """The version line is one stdout line and nothing else."""
+    stdout = completed.stdout.decode("utf-8", errors="replace")
+    assert completed.returncode == 0
+    assert completed.stderr == b""
+    assert stdout.endswith("\n") and stdout.count("\n") == 1
+    name, version = stdout.rstrip("\n").split(" ", 1)
+    assert name == "mcp-caretaker"
+    assert version == __version__
+    return version
+
+
+def test_version_flag_on_module_invocation() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "mcp_caretaker", "--version"],
+        capture_output=True,
+        timeout=TIMEOUT,
+        check=False,
+    )
+    _assert_version_output(completed)
+
+
+def test_version_flag_on_console_command() -> None:
+    completed = subprocess.run(
+        [str(_console_command()), "--version"],
+        capture_output=True,
+        timeout=TIMEOUT,
+        check=False,
+    )
+    _assert_version_output(completed)
+
+
+def test_version_matches_json_report(tmp_path: Path) -> None:
+    json_path = tmp_path / "report.json"
+    code, _, _ = _run_cli(
+        ["--trust", "--json", str(json_path), "--", *_server("clean_server.py")]
+    )
+    assert code == 0
+    report = json.loads(json_path.read_text(encoding="utf-8"))
+    completed = subprocess.run(
+        [sys.executable, "-m", "mcp_caretaker", "--version"],
+        capture_output=True,
+        timeout=TIMEOUT,
+        check=False,
+    )
+    assert _assert_version_output(completed) == report["tool"]["version"]

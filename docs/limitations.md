@@ -114,7 +114,7 @@ and still write files or change state. Only test servers you trust.
 - macOS and other platforms are not tested.
 - The MCP SDK is pinned to one exact version for now (`mcp==2.3.0`,
   `mcp-types==2.3.0`), so behaviour against other SDK versions is unknown.
-- The version of this tool is a pre-release `0.0.0.dev0`.
+- The version of this tool is a pre-release; `mcp-caretaker --version` prints the current value, which lives in `src/mcp_caretaker/__init__.py`.
 
 ## Exit codes
 

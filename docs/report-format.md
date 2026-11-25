@@ -30,8 +30,9 @@ Verdict words are exactly `pass`, `warn`, `fail`, and `not_tested`. A
 `not_tested` result always has a reason and is never counted or displayed as
 pass.
 
-`CT-CANARY-003` is the only result whose summary is built from more than one
-session. Its pass summary is `{N} stderr bytes scanned across {S} session(s)
+`CT-CANARY-003` is the only result whose summary counts sessions; `CT-STAB-001`
+compares two sessions but its summary counts tools, not sessions. Its pass
+summary is `{N} stderr bytes scanned across {S} session(s)
 and {M} stdout lines scanned; no findings.`, where `S` counts the sessions
 whose stderr, including shutdown output, was actually scanned, and `N` is the
 unclamped sum over those sessions because the cap is per session. When a
