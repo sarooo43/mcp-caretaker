@@ -57,7 +57,7 @@ Only `src/mcp_caretaker/thresholds.py` holds these check thresholds. The numbers
 
 ## What is not here
 
-No score, grade, report file, JUnit output, pytest helper, MCP front end, Docker, HTTP transport, OAuth, LLM, extra CLI command, publishing, tag, or changelog. No raw protocol garbage. No allow-list widening, opt-out flags, or suppression for v0.1. No dependency pin change and no new runtime dependency. At most 4 probes per tool by design; there is no `MAX_PROBES_PER_TOOL` constant. Secret-value probes and tool-list comparison are now part of the library; findings are facts, not verdicts of intent.
+No score, grade, JUnit output, pytest helper, MCP front end, Docker, HTTP transport, OAuth, LLM, extra CLI command, publishing, tag, or changelog. No raw protocol garbage. No allow-list widening, opt-out flags, or suppression for v0.1. No dependency pin change and no new runtime dependency. At most 4 probes per tool by design; there is no `MAX_PROBES_PER_TOOL` constant. Secret-value probes and tool-list comparison are now part of the library; findings are facts, not verdicts of intent.
 
 ## Shell instructions
 
