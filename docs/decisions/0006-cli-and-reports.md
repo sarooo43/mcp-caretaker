@@ -192,3 +192,33 @@ The final head includes this proof text and the restored escape function;
 the mutation commit contains the disabled escape and lacks the appended
 proof text. No canary value, base64 form, helper script, or output file
 was stored for the mutation proof.
+
+## Windows CI fixes after the first pull request run
+
+The first pull request run `45518867135` on head
+`aa43059963aa43237159473edf688ba212f73c06` was green on both Ubuntu jobs and
+red on both Windows jobs: windows 3.13 job `138885305592` `failure` and
+windows 3.11 job `138885305607` `failure`, with `2 failed, 158 passed` in the
+Windows 3.11 job. Both failures were in the CLI tests, not in a check.
+
+1. `test_clean_server_exit_zero_with_json_and_markdown` expected the output
+   path back exactly as given. The terminal reported it with doubled
+   backslashes, because the escape function doubles backslash and a Windows
+   path contains backslash. Decision: the two output file paths are the
+   user's own arguments and not server text, so they now use the same escape
+   function with `escape_backslash=False`. Every other string keeps the
+   strict escaping, and a pure test
+   `test_terminal_prints_local_paths_without_doubling_backslashes` covers a
+   Windows-style path. `docs/report-format.md` records the rule.
+2. `test_hostile_text_escaped_and_fenced` expected `caf\u00E9` in the
+   terminal output. On Windows the fixture wrote the hostile stdout line
+   through text mode, which encodes as the console code page, so the UTF-8
+   byte for `\u00e9` was replaced before the tool saw it. Decision: the
+   fixture now writes stdout noise as UTF-8 bytes
+   (`sys.stdout.buffer.write`), so the byte stream is the same on every
+   platform; the tool was not changed. Verified locally by running the
+   fixture with `PYTHONIOENCODING=cp1252` and observing the two UTF-8 bytes
+   `0xC3 0xA9`.
+
+Both changes are test and fixture changes plus one rendering choice for
+non-server paths; no check, threshold, or scoring behaviour changed.

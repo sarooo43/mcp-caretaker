@@ -20,18 +20,20 @@ SAFETY_SENTENCE = (
 )
 
 
-def escape_ascii(text: str) -> str:
+def escape_ascii(text: str, *, escape_backslash: bool = True) -> str:
     """Escape every character outside printable ASCII as a visible escape.
 
     Printable ASCII (space to tilde) is kept, except backslash which is
     doubled so a literal escape sequence in server text cannot be mistaken
     for one of ours. Everything else becomes ``\\uXXXX`` or ``\\UXXXXXXXX``.
     The result is pure ASCII and does not depend on the console code page.
+    Local paths are printed with ``escape_backslash=False`` so a Windows path
+    stays copyable; they are not server text.
     """
     out: list[str] = []
     for char in text:
         code = ord(char)
-        if char == "\\":
+        if char == "\\" and escape_backslash:
             out.append("\\\\")
         elif 0x20 <= code <= 0x7E:
             out.append(char)
@@ -210,7 +212,7 @@ def render_terminal(
     )
     lines.append(SAFETY_SENTENCE)
     if json_path is not None:
-        lines.append(f"JSON: {escape_ascii(json_path)}")
+        lines.append(f"JSON: {escape_ascii(json_path, escape_backslash=False)}")
     if markdown_path is not None:
-        lines.append(f"Markdown: {escape_ascii(markdown_path)}")
+        lines.append(f"Markdown: {escape_ascii(markdown_path, escape_backslash=False)}")
     return "\n".join(lines) + "\n"

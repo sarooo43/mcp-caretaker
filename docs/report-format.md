@@ -56,10 +56,13 @@ outside a fence.
 ## Terminal rules
 
 The terminal summary is printable ASCII only. Every string that can contain
-server text (summaries, reasons, evidence, tool names, paths) passes through
-one escape function that escapes every character outside printable ASCII,
-including escape and control characters. Output does not depend on the
-console code page. The summary shows the header facts, all 25 check lines in
+server text (summaries, reasons, evidence, tool names, protocol version)
+passes through one escape function that escapes every character outside
+printable ASCII, including escape and control characters and backslash.
+Output does not depend on the console code page. The two output file paths
+at the end are the user's own arguments, not server text: they are escaped
+the same way except that backslash is kept as written, so a Windows path
+stays copyable. The summary shows the header facts, all 25 check lines in
 registry order, summary and evidence subject and detail for every non-pass
 (no replay), the four totals, the safety sentence, and the paths of written
 files.

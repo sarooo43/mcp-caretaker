@@ -104,8 +104,8 @@ def serve(
     if pidfile is not None:
         Path(pidfile).write_text(str(os.getpid()), encoding="utf-8")
     for line in stdout_noise or []:
-        sys.stdout.write(line + "\n")
-        sys.stdout.flush()
+        sys.stdout.buffer.write((line + "\n").encode("utf-8"))
+        sys.stdout.buffer.flush()
     for line in stderr_lines or []:
         sys.stderr.write(line + "\n")
         sys.stderr.flush()

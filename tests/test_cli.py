@@ -26,6 +26,7 @@ from mcp_caretaker.report import (
     exit_code_for_counts,
     fence,
     program_name,
+    render_terminal,
 )
 
 TIMEOUT = 30
@@ -461,3 +462,21 @@ def test_report_dict_key_order_and_counts() -> None:
     ]
     assert report["server"] == {"program": "prog", "argument_count": 2}
     assert report["counts"] == {"pass": 1, "warn": 1, "fail": 0, "not_tested": 0}
+
+
+def test_terminal_prints_local_paths_without_doubling_backslashes() -> None:
+    report = build_report_dict(
+        RunResult(
+            caretaker_version="0.0.0.dev0",
+            protocol_version=None,
+            server_name=None,
+            server_version=None,
+            results=(CheckResult("CT-START-001", "Title", Verdict.PASS, "ok"),),
+        ),
+        "C:\\tools\\python.exe",
+        0,
+    )
+    text = render_terminal(report, "C:\\out\\report.json", "C:\\out\\report.md")
+    assert "JSON: C:\\out\\report.json" in text
+    assert "Markdown: C:\\out\\report.md" in text
+    assert all(ord(char) < 128 for char in escape_ascii("caf\u00e9 \\ \x1b"))
