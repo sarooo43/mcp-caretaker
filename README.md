@@ -1,16 +1,49 @@
 # mcp-caretaker
 
-**Pre-release. Library only; no supported command line workflow yet.**
+**Pre-release. Command line and library; no supported release workflow yet.**
 
-mcp-caretaker is a free, MIT licensed, local-first project for observing **local MCP servers started over stdio**. This repository now contains a launcher, a library with 25 checks in five groups (startup, description/schema basics, robustness, canary, and stability), and fixture servers. The library entry point is `mcp_caretaker.run_checks(spec, *, confirmed)`; it returns a frozen `RunResult` with one result per check ID.
+mcp-caretaker is a free, MIT licensed, local-first project for observing **local MCP servers started over stdio**. This repository now contains a launcher, a library with 25 checks in five groups (startup, description/schema basics, robustness, canary, and stability), a `check` command with JSON and Markdown reports, and fixture servers. The library entry point is `mcp_caretaker.run_checks(spec, *, confirmed)`; it returns a frozen `RunResult` with one result per check ID.
 
-There is no check command yet. The command line interface still has only `--version` and `--help`. There are no report files, no scores or grades, no MCP front end, no Docker or HTTP transport, no OAuth, no LLM, no publishing, no tags, and no changelog. No new runtime dependency was added.
+There are no scores or grades, no MCP front end, no Docker or HTTP transport, no OAuth, no LLM, no publishing, no tags, and no changelog. No new runtime dependency was added.
 
 All server text is untrusted input: product code only inspects and quotes it. It is never executed, used as a path, or sent to a network. Product code makes no network calls, telemetry calls, or LLM calls. Guessed check numbers live only in `src/mcp_caretaker/thresholds.py`, and the docs say so. Failing probe evidence may include constructed replay lines; the line is not captured, is not byte-exact, and needs an initialize handshake first. Every other evidence entry has `replay` set to `null`.
 
 **NOT a sandbox: only test servers you trust.** Launching a server runs real code on your machine. The child environment is stripped and the process tree is killed on exit, but this is not isolation and makes no security guarantee.
 
 **From this version, tools that declare readOnlyHint receive real calls with generated input. A server can lie about that hint. Only test servers you trust.**
+
+## Usage
+
+Run all 25 checks against one local server with the `check` command. The server command goes after the first `--` and is launched directly, never through a shell. Use absolute paths for the server program and script: relative paths are not rewritten, and the server starts in an empty working folder.
+
+```sh
+mcp-caretaker check --trust -- /absolute/path/to/server
+```
+
+`--trust` is required. It means this runs the server on your machine and is not a sandbox. Without `--trust` nothing is launched and no file is written. The same command works as `python -m mcp_caretaker check --trust -- /absolute/path/to/server`.
+
+Options, all before the first `--`:
+
+- `--trust`: confirm that running the server on this machine is intended.
+- `--env NAME=VALUE`: extra environment variable for the server. Repeatable. Names starting with `CARETAKER_CANARY_` are rejected.
+- `--startup-timeout SECONDS`: handshake timeout. Default comes from `LaunchSpec`.
+- `--call-timeout SECONDS`: per-call timeout. Default comes from `LaunchSpec`.
+- `--json PATH`: write the JSON report to `PATH`. Existing files are overwritten.
+- `--markdown PATH`: write the Markdown report to `PATH`. Existing files are overwritten.
+- `--fail-on fail|warn`: treat warnings as failures too. Default is `fail`.
+
+The terminal prints one short line to stderr before the run, then a summary to stdout. The JSON report is the source of truth; Markdown is rendered from the same data. See `docs/report-format.md` for every field.
+
+Exit codes: `0` means no check failed (and no check warned when `--fail-on warn` is given). `1` means at least one check failed, or at least one warned with `--fail-on warn`. `2` means a usage error, an unwritable output location, or an unexpected internal error. A `not_tested` result never changes the exit code. A server that does not start is a normal run with `CT-START-001` failed and exit code `1`.
+
+A pass is not a safety guarantee. Running a server executes its code; this tool is not a sandbox.
+
+### Limits
+
+- A pass is not a safety guarantee. This tool is not a sandbox.
+- Tools that declare readOnlyHint get real calls with generated input.
+- The report never shows server arguments. A server could print its own arguments, and the report would then show that output.
+- Findings are facts, not verdicts of intent.
 
 ## Secret canary and stability
 

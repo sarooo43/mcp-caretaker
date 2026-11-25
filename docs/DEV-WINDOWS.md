@@ -14,3 +14,19 @@ pytest -q
 
 The last line of pytest output (for example `N passed in X s`) is all the owner needs
 to report. Nothing else in the output needs to be copied.
+
+## Step 7: try the check command once
+
+NOT VERIFIED until the owner runs it. Run one command per line, in order.
+Use absolute paths for the venv interpreter and the fixture script, and keep
+the report files in the current folder.
+
+```powershell
+$py = (Resolve-Path .venv\\Scripts\\python.exe).Path
+$server = (Resolve-Path examples\\servers\\clean_server.py).Path
+& $py -m mcp_caretaker check --trust --json report.json --markdown report.md -- $py $server
+```
+
+Expected: exit code 0, 25 `[PASS]` lines, and `report.json` plus `report.md`
+in the current folder. A pass is not a safety guarantee. Running a server
+executes its code; this tool is not a sandbox.

@@ -52,6 +52,7 @@ secrets. Findings are facts, not verdicts of intent.
 | `bad_hangs_on_startup.py` | standard library | PR 1 startup fixture reused for CT-START-001 |
 | `bad_canary_leaks.py` | raw helper | One fake value in a chosen answer, listing, handshake, stderr, or stdout mode |
 | `bad_rug_pull.py` | raw helper | Reconnect and after-call tool-field changes, added or removed tools, and reordered tools |
+| `bad_hostile_text.py` | raw helper | Backtick runs, a markdown link, an HTML tag, an escape character, and a non-ASCII letter in a description and a stdout line |
 
-The check results are returned only as library objects. There is no report file,
-no score, no grade, and no command line check command yet. See `docs/checks/`.
+The check results are returned as library objects and as command line reports.
+There is no score and no grade. See `docs/checks/` and `docs/report-format.md`.
