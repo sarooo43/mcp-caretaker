@@ -8,6 +8,18 @@ One `tools/call` probe sends a string of `1,048,576` characters to a tool whose 
 
 A call with a large string can reveal a response timeout or a child exit that ordinary descriptions do not show.
 
+## How it is decided
+
+A single string of `HUGE_STRING_LENGTH = 1048576` characters is sent to each tool whose raw `readOnlyHint` is exactly `true`. A child exit is `fail`, no answer within `--call-timeout` is `warn`, and an answer is `pass`. When no read-only tool exists the check is `not_tested` with a reason.
+
+## How to reproduce
+
+Run one command per line with absolute paths: `<python>` is the interpreter that has this package installed and `<repo>` is this repository. This row is in [the fixture gallery](../gallery.md).
+
+```sh
+<python> -m mcp_caretaker check --trust --call-timeout 2 -- <python> <repo>/examples/servers/bad_huge_input.py
+```
+
 ## Verdict
 
 - `pass`: the huge-input probe returned `error_result`, `jsonrpc_error`, or `success` within `call_timeout`.

@@ -8,8 +8,10 @@ example-server paths, a timeout, and UTF-8 decoding with replacement.
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
+import sysconfig
 from pathlib import Path, PureWindowsPath
 
 import pytest
@@ -52,6 +54,14 @@ def _server(name: str, *extra: str) -> list[str]:
 
 def _check_lines(stdout: str) -> list[str]:
     return [line for line in stdout.splitlines() if line.startswith("[")]
+
+
+def _console_command() -> Path:
+    """Locate the installed console command in this interpreter's scripts."""
+    scripts = sysconfig.get_path("scripts")
+    found = shutil.which("mcp-caretaker", path=scripts) if scripts else None
+    assert found is not None, "mcp-caretaker console command was not found"
+    return Path(found)
 
 
 def test_clean_server_exit_zero_with_json_and_markdown(tmp_path: Path) -> None:
@@ -374,7 +384,8 @@ def test_stderr_cap_counts_two_capped_scans() -> None:
     )
     output = completed.stdout.decode("utf-8", errors="replace")
     assert completed.returncode == 0
-    assert "128 stderr bytes scanned" in output
+    assert "128 stderr bytes scanned across 2 session(s)" in output
+    assert "Stderr cap of 64 bytes per session reached." in output
 
 
 def test_fence_uses_longest_run_plus_one() -> None:
@@ -480,3 +491,81 @@ def test_terminal_prints_local_paths_without_doubling_backslashes() -> None:
     assert "JSON: C:\\out\\report.json" in text
     assert "Markdown: C:\\out\\report.md" in text
     assert all(ord(char) < 128 for char in escape_ascii("caf\u00e9 \\ \x1b"))
+
+
+def test_stderr_summary_names_two_sessions(tmp_path: Path) -> None:
+    json_path = tmp_path / "report.json"
+    code, _, _ = _run_cli(
+        ["--trust", "--json", str(json_path), "--", *_server("clean_server.py")]
+    )
+    assert code == 0
+    report = json.loads(json_path.read_text(encoding="utf-8"))
+    summary = next(
+        item["summary"]
+        for item in report["results"]
+        if item["check_id"] == "CT-CANARY-003"
+    )
+    assert "across 2 session(s)" in summary
+    assert summary.endswith("no findings.")
+    assert "Stderr cap of" not in summary
+
+
+def test_stderr_summary_names_one_session_when_second_did_not_run(
+    tmp_path: Path,
+) -> None:
+    json_path = tmp_path / "report.json"
+    code, _, _ = _run_cli(
+        [
+            "--trust",
+            "--json",
+            str(json_path),
+            "--",
+            *_server("bad_tools_list_error.py"),
+        ]
+    )
+    assert code == 1
+    report = json.loads(json_path.read_text(encoding="utf-8"))
+    summary = next(
+        item["summary"]
+        for item in report["results"]
+        if item["check_id"] == "CT-CANARY-003"
+    )
+    assert "across 1 session(s)" in summary
+    assert "no findings." in summary
+
+
+def test_console_command_runs_clean_server(tmp_path: Path) -> None:
+    command = _console_command()
+    json_path = tmp_path / "report.json"
+    completed = subprocess.run(
+        [
+            str(command),
+            "check",
+            "--trust",
+            "--json",
+            str(json_path),
+            "--",
+            *_server("clean_server.py"),
+        ],
+        capture_output=True,
+        timeout=TIMEOUT,
+        check=False,
+    )
+    stdout = completed.stdout.decode("utf-8", errors="replace")
+    assert completed.returncode == 0
+    assert len(_check_lines(stdout)) == 25
+    report = json.loads(json_path.read_text(encoding="utf-8"))
+    assert sum(report["counts"].values()) == 25
+
+
+def test_bare_invocations_print_usage_on_stderr_and_exit_2() -> None:
+    for args in ([], ["check"]):
+        completed = subprocess.run(
+            [sys.executable, "-m", "mcp_caretaker", *args],
+            capture_output=True,
+            timeout=TIMEOUT,
+            check=False,
+        )
+        assert completed.returncode == 2
+        assert completed.stdout == b""
+        assert b"usage: mcp-caretaker check" in completed.stderr

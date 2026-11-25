@@ -6,6 +6,18 @@ Each raw tool name matches `^[A-Za-z0-9_.-]{1,128}$`. The official tools page sa
 ## Why it matters
 A predictable name shape is easier for clients to display and quote. The spec wording is SHOULD, so this check does not fail.
 
+## How it is decided
+
+Each tool name must match `^[A-Za-z0-9_.-]{1,128}$`. Every name that does not adds evidence; `warn` when at least one does, otherwise `pass`. The spec states this rule as SHOULD, so the verdict is `warn`, not `fail`.
+
+## How to reproduce
+
+Run one command per line with absolute paths: `<python>` is the interpreter that has this package installed and `<repo>` is this repository. This row is in [the fixture gallery](../gallery.md).
+
+```sh
+<python> -m mcp_caretaker check --trust -- <python> <repo>/examples/servers/bad_tool_name_format.py
+```
+
 ## Verdict
 `warn`: one or more names do not match the rule. `pass`: every name matches. `not_tested`: with a reason when `tools/list` or startup failed. `not_tested` is never counted or displayed as pass.
 

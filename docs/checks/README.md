@@ -10,7 +10,7 @@ The official SDK and specification facts behind these checks were VERIFIED in `.
 
 ## Thresholds
 
-Only `src/mcp_caretaker/thresholds.py` holds these check thresholds. The numbers are guesses, not measurements. The probe guesses are `1 MiB, 50 tools, 120 s` in `thresholds.py`. The stderr scan cap is also `1 MiB` from the start of each session.
+Only `src/mcp_caretaker/thresholds.py` holds these check thresholds. The numbers are guesses, not measurements. The probe guesses are `1 MiB, 50 tools, 120 s` in `thresholds.py`. The stderr scan cap is also `1 MiB` per session, and every session's stderr is scanned.
 
 - `DESC_MIN_LENGTH = 10` — this number is a guess; it lives in thresholds.py.
 - `DESC_MAX_LENGTH = 1000` — this number is a guess; it lives in thresholds.py.
@@ -87,7 +87,7 @@ python -m venv .venv
 - The stripped child environment may break servers needing `HOME`, `USERPROFILE`, or arbitrary parent variables.
 - `extra_env` values shorter than 4 characters are not redacted.
 - Only three canary names are planted; a deliberate show-environment tool is flagged and v0.1 has no suppress.
-- Only the value encoded on its own with standard base64 is detected; stderr is capped at 1 MiB from the start of each session.
+- Only the value encoded on its own with standard base64 is detected; stderr is capped at 1 MiB per session.
 - Windows local verification is limited to GitHub Actions CI.
 - `readOnlyHint` is untrusted; only test servers you trust.
 - An empty tool list is valid for a server offering other features, so it warns rather than fails.

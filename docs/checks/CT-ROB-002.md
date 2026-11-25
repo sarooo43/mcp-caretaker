@@ -8,6 +8,18 @@ For each tool, one `tools/call` probe omits every `required` property. The probe
 
 A successful result without required properties gives callers an unclear contract and makes later argument handling harder to reason about.
 
+## How it is decided
+
+One call is sent for each eligible tool with a required property removed. A success is `warn`, no answer or a child exit is `fail`, and a proper rejection is `pass`. The summary counts tested and skipped probes.
+
+## How to reproduce
+
+Run one command per line with absolute paths: `<python>` is the interpreter that has this package installed and `<repo>` is this repository. This row is in [the fixture gallery](../gallery.md).
+
+```sh
+<python> -m mcp_caretaker check --trust -- <python> <repo>/examples/servers/bad_missing_required.py
+```
+
 ## Verdict
 
 - `pass`: every planned missing-required probe returned `error_result` or `jsonrpc_error`.

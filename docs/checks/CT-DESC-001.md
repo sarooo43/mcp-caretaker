@@ -6,6 +6,18 @@ Each raw tool has a non-empty string `description`. Omitted and non-string value
 ## Why it matters
 Tool text is what a client sees when choosing a tool. A missing description gives the client less information.
 
+## How it is decided
+
+Each tool's `description` is checked as a string after strip. A missing, non-string or empty description adds one evidence item; `warn` when at least one tool is listed that way and `pass` otherwise.
+
+## How to reproduce
+
+Run one command per line with absolute paths: `<python>` is the interpreter that has this package installed and `<repo>` is this repository. This row is in [the fixture gallery](../gallery.md).
+
+```sh
+<python> -m mcp_caretaker check --trust -- <python> <repo>/examples/servers/bad_no_descriptions.py
+```
+
 ## Verdict
 `pass`: zero tools lack a description. `warn`: one or more tools lack a usable description. `not_tested`: with a reason when `tools/list` or startup failed. `not_tested` is never counted or displayed as pass.
 

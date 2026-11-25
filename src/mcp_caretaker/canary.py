@@ -137,6 +137,8 @@ class CanaryTracker:
     stdout_lines_scanned: int = 0
     stderr_bytes_scanned: int = 0
     stderr_cap_hit: bool = False
+    stderr_cap_bytes: int = 0
+    sessions_scanned: int = 0
     stderr_after_close: bool = True
 
     def _forms(self) -> list[tuple[str, str, str]]:
@@ -208,10 +210,17 @@ class CanaryTracker:
         self._record(line, "stdout", None, self.output_findings)
 
     def observe_stderr(
-        self, text: str, bytes_scanned: int, cap_hit: bool, after_close: bool
+        self,
+        text: str,
+        bytes_scanned: int,
+        cap_hit: bool,
+        after_close: bool,
+        cap_bytes: int,
     ) -> None:
         self.stderr_bytes_scanned += bytes_scanned
         self.stderr_cap_hit = self.stderr_cap_hit or cap_hit
+        self.stderr_cap_bytes = max(self.stderr_cap_bytes, cap_bytes)
+        self.sessions_scanned += 1
         self.stderr_after_close = self.stderr_after_close and after_close
         self._record(text, "stderr", None, self.output_findings)
 
@@ -221,14 +230,23 @@ def observe_session_stderr(
     before: tuple[str, int, bool] | None,
     after: tuple[str, int, bool] | None,
     cached_text: str,
+    cap_bytes: int,
 ) -> None:
-    """Prefer the after-close prefix; document the before-shutdown fallback."""
+    """Count one scanned session; prefer the after-close prefix.
+
+    When neither raw read is available the cached redacted tail is counted
+    as it is, so that fallback number is not capped by the scan limit.
+    """
     prefix = after if after is not None else before
     if prefix is not None:
-        tracker.observe_stderr(*prefix, after_close=after is not None)
+        tracker.observe_stderr(
+            *prefix, after_close=after is not None, cap_bytes=cap_bytes
+        )
         return
     data = cached_text.encode("utf-8")
-    tracker.observe_stderr(cached_text, len(data), False, False)
+    tracker.observe_stderr(
+        cached_text, len(data), False, after_close=False, cap_bytes=cap_bytes
+    )
 
 
 def _result(
@@ -304,11 +322,14 @@ def build_output_result(tracker: CanaryTracker) -> CheckResult:
     else:
         verdict = Verdict.PASS
         summary = (
-            f"{tracker.stderr_bytes_scanned} stderr bytes scanned and "
+            f"{tracker.stderr_bytes_scanned} stderr bytes scanned across "
+            f"{tracker.sessions_scanned} session(s) and "
             f"{tracker.stdout_lines_scanned} stdout lines scanned; no findings."
         )
     if tracker.stderr_cap_hit:
-        summary += " stderr cap reached."
+        summary += (
+            f" Stderr cap of {tracker.stderr_cap_bytes} bytes per session reached."
+        )
     if not tracker.stderr_after_close:
         summary += " used before-shutdown stderr prefix."
     return _result(CANARY_IDS[2], verdict, summary, findings)

@@ -8,6 +8,18 @@ One `tools/call` probe uses a name that does not appear in `tools/list`. The pro
 
 A successful result for an unknown name gives callers an unclear contract about which operations a server accepts.
 
+## How it is decided
+
+One call is sent with the fixed unknown name `caretaker_no_such_tool`. A success is `warn`, no answer or a child exit is `fail`, and a JSON-RPC error is `pass`. The summary counts tested and skipped probes.
+
+## How to reproduce
+
+Run one command per line with absolute paths: `<python>` is the interpreter that has this package installed and `<repo>` is this repository. This row is in [the fixture gallery](../gallery.md).
+
+```sh
+<python> -m mcp_caretaker check --trust -- <python> <repo>/examples/servers/bad_unknown_tool.py
+```
+
 ## Verdict
 
 - `pass`: the unknown-tool probe returned `error_result` or `jsonrpc_error`.

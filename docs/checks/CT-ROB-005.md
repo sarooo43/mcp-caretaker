@@ -8,6 +8,18 @@ For each tool whose raw `annotations.readOnlyHint` is exactly JSON `true`, one `
 
 A call with generated valid input should return a successful tool result so callers can see the ordinary execution path.
 
+## How it is decided
+
+Valid input is generated from each read-only tool's schema. A child exit is `fail`; an error result, a JSON-RPC error or no answer is `warn`; a success is `pass`. When input cannot be generated the probe is skipped, and the check is `not_tested` when nothing else ran.
+
+## How to reproduce
+
+Run one command per line with absolute paths: `<python>` is the interpreter that has this package installed and `<repo>` is this repository. This row is in [the fixture gallery](../gallery.md).
+
+```sh
+<python> -m mcp_caretaker check --trust -- <python> <repo>/examples/servers/bad_valid_call.py
+```
+
 ## Verdict
 
 - `pass`: every planned valid-input probe returned `success`.

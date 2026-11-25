@@ -8,6 +8,18 @@ For each tool, one `tools/call` probe sends a required property with a value who
 
 A successful result for input that does not match `inputSchema` gives callers an unclear contract and makes later argument handling harder to reason about.
 
+## How it is decided
+
+One wrong-type value is built from each eligible tool's schema and sent in a `tools/call`. A success is `warn` because bad input was accepted, no answer or a child exit is `fail`, and a proper rejection is `pass`. The summary counts tested and skipped probes.
+
+## How to reproduce
+
+Run one command per line with absolute paths: `<python>` is the interpreter that has this package installed and `<repo>` is this repository. This row is in [the fixture gallery](../gallery.md).
+
+```sh
+<python> -m mcp_caretaker check --trust -- <python> <repo>/examples/servers/bad_wrong_type.py
+```
+
 ## Verdict
 
 - `pass`: every planned wrong-type probe returned `error_result` or `jsonrpc_error`.

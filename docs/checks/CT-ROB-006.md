@@ -8,6 +8,18 @@ After `no_answer` or `exited` from a probe, an immediate `tools/list` liveness r
 
 A server that stops answering after a probe cannot complete the remaining observations in this run.
 
+## How it is decided
+
+After the probes one more `tools/list` is sent within `--call-timeout`. A failure is `fail` and a success is `pass`; when the probe phase was skipped or the time budget ran out the check is `not_tested`.
+
+## How to reproduce
+
+Run one command per line with absolute paths: `<python>` is the interpreter that has this package installed and `<repo>` is this repository. This row is in [the fixture gallery](../gallery.md).
+
+```sh
+<python> -m mcp_caretaker check --trust -- <python> <repo>/examples/servers/bad_dies_after_probes.py
+```
+
 ## Verdict
 
 - `pass`: the final liveness request returned within `call_timeout` and the child was still active.
