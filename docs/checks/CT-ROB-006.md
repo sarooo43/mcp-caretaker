@@ -8,6 +8,18 @@ After `no_answer` or `exited` from a probe, an immediate `tools/list` liveness r
 
 A server that stops answering after a probe cannot complete the remaining observations in this run.
 
+## How it is decided
+
+After the probes one more `tools/list` is sent within `--call-timeout`. A failure is `fail` and a success is `pass`; when the probe phase was skipped or the time budget ran out the check is `not_tested`.
+
+## How to reproduce
+
+Run one command per line with absolute paths: `<python>` is the interpreter that has this package installed and `<repo>` is this repository. This row is in [the fixture gallery](../gallery.md).
+
+```sh
+<python> -m mcp_caretaker check --trust -- <python> <repo>/examples/servers/bad_dies_after_probes.py
+```
+
 ## Verdict
 
 - `pass`: the final liveness request returned within `call_timeout` and the child was still active.
@@ -20,4 +32,4 @@ Keep the stdio session active after handling `tools/call`, and answer `tools/lis
 
 ## Limits
 
-`readOnlyHint` is untrusted; a mislabelled writer receives valid and huge calls. Invalid-input probing not perfectly safe. Generated values placeholders. Replay constructed/not captured/needs initialize handshake first; the line is not byte-exact. Guesses `1 MiB, 50 tools, 120 s` in `thresholds.py`. At most 4 probes per tool by design. Nested properties not probed.
+`readOnlyHint` is untrusted, so a mislabelled writer receives valid and huge calls. Every probe sends a real request, so a server may act on it. Generated values are shown as placeholders. Replay lines are constructed, not captured, and need the initialize handshake first; they are not byte-exact. The numbers `1 MiB, 50 tools, 120 s` are guesses that live in `thresholds.py`. At most 4 probes per tool by design. Nested properties are not probed.

@@ -10,14 +10,7 @@ from mcp_caretaker.checks.description import DESCRIPTION_CHECK_FUNCTIONS
 from mcp_caretaker.checks.startup import STARTUP_CHECK_FUNCTIONS, StartupContext
 
 ROOT = Path(__file__).resolve().parents[1]
-BASE_HEADINGS = [
-    "What it checks",
-    "Why it matters",
-    "Verdict",
-    "How to fix",
-    "Limits",
-]
-NEW_HEADINGS = [
+REQUIRED_HEADINGS = [
     "What it checks",
     "Why it matters",
     "How it is decided",
@@ -34,7 +27,7 @@ def test_every_check_has_docs_page_with_required_headings() -> None:
         path = ROOT / info.docs_path
         text = path.read_text(encoding="utf-8")
         headings = re.findall(r"^## (.+)$", text, flags=re.MULTILINE)
-        assert headings in (BASE_HEADINGS, NEW_HEADINGS), path
+        assert headings == REQUIRED_HEADINGS, path
         assert "not_tested` is never counted or displayed as pass" in text
 
 
@@ -43,6 +36,8 @@ def test_new_docs_have_no_dates_or_chained_shell_commands() -> None:
         ROOT / "README.md",
         ROOT / "examples/servers/README.md",
         ROOT / "docs/checks/README.md",
+        ROOT / "docs/gallery.md",
+        ROOT / "docs/limitations.md",
         *(ROOT / info.docs_path for info in CHECKS),
     ]
     joined = "\n".join(path.read_text(encoding="utf-8") for path in paths)

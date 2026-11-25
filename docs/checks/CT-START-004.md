@@ -6,6 +6,18 @@ The bridge sees child stdout before the SDK parses it. A bounded tap counts non-
 ## Why it matters
 The SDK dispatcher debug-ignores a stream exception when no observer is set, so a plain text line would otherwise disappear. The tap makes this condition warn-capable.
 
+## How it is decided
+
+The session records stdout lines that are not part of the protocol stream, and keeps up to five of them. One or more lines give `warn` with the line count and the quoted lines as evidence; zero lines give `pass`.
+
+## How to reproduce
+
+Run one command per line with absolute paths: `<python>` is the interpreter that has this package installed and `<repo>` is this repository. This row is in [the fixture gallery](../gallery.md).
+
+```sh
+<python> -m mcp_caretaker check --trust -- <python> <repo>/examples/servers/leaky_stdout.py
+```
+
 ## Verdict
 `pass`: zero non-protocol stdout lines were seen. `warn`: one or more lines were seen. `not_tested`: with a reason after startup failure or a runner error. `not_tested` is never counted or displayed as pass.
 

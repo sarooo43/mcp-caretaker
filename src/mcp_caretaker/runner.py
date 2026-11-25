@@ -84,7 +84,8 @@ def _flatten(pages: list[dict[str, Any]]) -> list[dict[str, Any]] | None:
 async def _scan_session_stderr(
     session: ServerSession, tracker: canary.CanaryTracker
 ) -> BaseException | None:
-    before = session.read_stderr_prefix(thresholds.STDERR_SCAN_MAX_BYTES)
+    cap_bytes = thresholds.STDERR_SCAN_MAX_BYTES
+    before = session.read_stderr_prefix(cap_bytes)
     exit_error: BaseException | None = None
     try:
         await session.__aexit__(None, None, None)
@@ -92,8 +93,10 @@ async def _scan_session_stderr(
         if _is_cancelled(exc):
             raise
         exit_error = exc
-    after = session.read_stderr_prefix(thresholds.STDERR_SCAN_MAX_BYTES)
-    canary.observe_session_stderr(tracker, before, after, session.stderr_text)
+    after = session.read_stderr_prefix(cap_bytes)
+    canary.observe_session_stderr(
+        tracker, before, after, session.stderr_text, cap_bytes
+    )
     return exit_error
 
 

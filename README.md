@@ -45,6 +45,8 @@ A pass is not a safety guarantee. Running a server executes its code; this tool 
 - The report never shows server arguments. A server could print its own arguments, and the report would then show that output.
 - Findings are facts, not verdicts of intent.
 
+The full list, including what is not checked at all, is in [docs/limitations.md](docs/limitations.md). The fixture gallery with the results each fixture produces is in [docs/gallery.md](docs/gallery.md).
+
 ## Secret canary and stability
 
 `run_checks` plants three fresh fake values named `CARETAKER_CANARY_API_KEY`, `CARETAKER_CANARY_TOKEN`, and `CARETAKER_CANARY_SECRET` on every call through the existing stripped `extra_env` path. No allow-list is widened, and `confirmed=True` remains mandatory. Values are fresh per `run_checks` call and are shared by both sessions in that call. Canary checks scan tool answers, handshake and first-listing text, stderr from the start up to a guessed cap, and full stray stdout lines before display truncation. Exact values and their standard base64 forms are redacted before any result is returned; no real secrets, canary values, or base64 forms are written to results, evidence, messages, logs, or files. Findings are facts, not verdicts of intent. A deliberate show-environment tool is flagged, and v0.1 has no suppress.

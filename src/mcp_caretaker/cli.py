@@ -30,6 +30,7 @@ TRUST_MESSAGE = (
     "error: --trust is required; --trust means this runs the server "
     "on your machine and is not a sandbox"
 )
+USAGE = "usage: mcp-caretaker check --trust [options] -- PROGRAM [ARGS...]"
 
 
 def _launch_defaults() -> dict[str, float]:
@@ -101,12 +102,12 @@ def main(argv: list[str] | None = None) -> int:
     """Run the check command; return 0, 1, or 2 as documented."""
     args = list(sys.argv[1:] if argv is None else argv)
     if not args or args[0] != "check":
-        print(
-            "usage: mcp-caretaker check --trust [options] -- PROGRAM [ARGS...]",
-            file=sys.stderr,
-        )
+        print(USAGE, file=sys.stderr)
         return 2
     rest = args[1:]
+    if not rest:
+        print(USAGE, file=sys.stderr)
+        return 2
     split = split_server_command(rest)
     if split is None:
         print("error: missing -- before the server command", file=sys.stderr)

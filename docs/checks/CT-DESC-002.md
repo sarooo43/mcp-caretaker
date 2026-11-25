@@ -6,6 +6,18 @@ The stripped tool-level description length. The minimum is 10 characters; this n
 ## Why it matters
 Very short or very long descriptions can be unhelpful to a client. The boundaries are deliberately modest and easy to change in one file.
 
+## How it is decided
+
+The stripped length of every non-empty description is compared with `DESC_MIN_LENGTH = 10` and `DESC_MAX_LENGTH = 1000`. Each length outside the range adds evidence with the length; `warn` when at least one does, otherwise `pass`. Empty descriptions are left to CT-DESC-001.
+
+## How to reproduce
+
+Run one command per line with absolute paths: `<python>` is the interpreter that has this package installed and `<repo>` is this repository. This row is in [the fixture gallery](../gallery.md).
+
+```sh
+<python> -m mcp_caretaker check --trust -- <python> <repo>/examples/servers/bad_description_length.py
+```
+
 ## Verdict
 `pass`: all descriptions are within both limits. `warn`: one or more descriptions are outside the limits. `not_tested`: with a reason when `tools/list` or startup failed. `not_tested` is never counted or displayed as pass.
 
