@@ -55,6 +55,114 @@ this PR.
   `Requires-Dist: mcp==2.3.0` and `mcp-types==2.3.0`. No build warning was
   printed.
 
+## Quoted facts for the follow-up review
+
+A1. `python -m pip index versions mcp` printed these lines verbatim. Each run
+also printed one warning first, quoted here once because it is about the
+command and not about either package:
+
+```
+WARNING: pip index is currently an experimental command. It may be removed/changed in a future release without prior warning.
+```
+
+The package lines from the first run:
+
+```
+mcp (2.3.0)
+Available versions: 2.3.0, 2.2.0, 2.1.1, 2.1.0, 2.0.1, 2.0.0, 1.30.0, 1.29.1, 1.29.0, 1.28.1, 1.28.0, 1.27.2, 1.27.1, 1.27.0, 1.26.0, 1.25.0, 1.24.0, 1.23.3, 1.23.2, 1.23.1, 1.23.0, 1.22.0, 1.21.2, 1.21.1, 1.21.0, 1.20.0, 1.19.0, 1.18.0, 1.17.0, 1.16.0, 1.15.0, 1.14.1, 1.14.0, 1.13.1, 1.13.0, 1.12.4, 1.12.3, 1.12.2, 1.12.1, 1.12.0, 1.11.0, 1.10.1, 1.10.0, 1.9.4, 1.9.3, 1.9.2, 1.9.1, 1.9.0, 1.8.1, 1.8.0, 1.7.1, 1.7.0, 1.6.0, 1.5.0, 1.4.1, 1.4.0, 1.3.0, 1.2.1, 1.2.0, 1.1.3, 1.1.2, 1.1.1, 1.1.0, 1.0.0, 0.9.1
+```
+
+```
+mcp-types (2.3.0)
+Available versions: 2.3.0, 2.2.0, 2.1.1, 2.1.0, 2.0.1, 2.0.0
+```
+
+Every version at or above 2.3.0, and whether it is below 2.4:
+
+| Package | Versions at or above 2.3.0 | Inside `>=2.3.0,<2.4` | Any version at 2.4 or higher |
+| --- | --- | --- | --- |
+| mcp | 2.3.0 | 2.3.0 | no, 2.3.0 is the newest release |
+| mcp-types | 2.3.0 | 2.3.0 | no, 2.3.0 is the newest release |
+
+Plainly: neither project has any release at 2.4 or higher, so there was no
+newer release to run the suite against and no 2.4-or-higher environment could
+be built. Both projects top out at 2.3.0, so the range `>=2.3.0,<2.4`
+contains exactly one version of each.
+
+A2. The installed `mcp` 2.3.0 distribution metadata, read with
+`importlib.metadata` and filtered for `mcp-types`, prints exactly one matching
+line:
+
+```
+Requires-Dist: mcp-types==2.3.0
+```
+
+That is the only `mcp-types` constraint in that metadata; the other 19
+`Requires-Dist` lines name `anyio`, `httpx2`, `jsonschema`,
+`opentelemetry-api`, `pydantic`, `pyjwt`, `python-multipart`, `pywin32`,
+`sse-starlette`, `starlette`, `typing-extensions`, `typing-inspection`,
+`uvicorn`, `python-dotenv`, `typer` and `rich`. Because `mcp` 2.3.0 pins
+`mcp-types` to the exact same version, our range `mcp-types>=2.3.0,<2.4` can
+only resolve to 2.3.0 while `mcp` stays at 2.3.0.
+
+A3. `git grep -n "0[.]0[.]0[.]dev0" e9dc130` (the commit this PR branched from)
+found every occurrence before this PR:
+
+| File and line before this PR | Text | What this PR did |
+| --- | --- | --- |
+| `pyproject.toml:7` | `version = "0.0.0.dev0"` | removed the literal; `[project]` now has `dynamic = ["version"]` and `[tool.hatch.version] path = "src/mcp_caretaker/__init__.py"` reads it |
+| `src/mcp_caretaker/__init__.py:3` | `__version__ = "0.0.0.dev0"` | kept, unchanged; this is now the only definition |
+| `docs/limitations.md:117` | the sentence The version of this tool is a pre-release `0.0.0.dev0`. | prose rewritten to point at `--version` and at the file, so the literal is gone from that page |
+| `tests/test_cli.py:456` | `caretaker_version="0.0.0.dev0",` | kept; an expected value inside a report fixture, not a definition |
+| `tests/test_cli.py:481` | `caretaker_version="0.0.0.dev0",` | kept; same |
+| `tests/test_model.py:104` | `caretaker_version="0.0.0.dev0",` | kept; same |
+
+The two statements that looked contradictory are both true at different times.
+"Two places" meant two files that *defined* the version: `pyproject.toml:7` and
+`src/mcp_caretaker/__init__.py:3`. "There is no second copy" is the state after
+this PR: no other file defines it, because the build reads the one line in
+`__init__.py`. The string still appears in three test expectations and in two
+documents that quote it (this file and `docs/RELEASING.md`, which shows the line
+the owner edits), and none of those feeds the build. `docs/RELEASING.md` now
+says "no other file defines it" rather than "no second copy" so the sentence
+matches that reading.
+
+A4. From the final head, `python -m build --outdir /tmp/a4 .` produced one wheel
+and one sdist and printed no warning:
+
+- wheel: 22 files, of which 5 are `mcp_caretaker-0.0.0.dev0.dist-info/METADATA`,
+  `RECORD`, `WHEEL`, `entry_points.txt` and `licenses/LICENSE`, and 17 are
+  package modules under `mcp_caretaker/`.
+- sdist: 146 members with a single top-level entry,
+  `mcp_caretaker-0.0.0.dev0/`.
+- METADATA lines, verbatim:
+
+```
+Name: mcp-caretaker
+Version: 0.0.0.dev0
+Project-URL: Homepage, https://github.com/sarooo43/mcp-caretaker
+Project-URL: Source, https://github.com/sarooo43/mcp-caretaker
+Project-URL: Issues, https://github.com/sarooo43/mcp-caretaker/issues
+License-Expression: MIT
+License-File: LICENSE
+Requires-Python: >=3.11
+Requires-Dist: mcp-types<2.4,>=2.3.0
+Requires-Dist: mcp<2.4,>=2.3.0
+Requires-Dist: psutil>=7.2.2; extra == 'dev'
+Requires-Dist: pytest-timeout>=2.4.0; extra == 'dev'
+Requires-Dist: pytest>=9.2.0; extra == 'dev'
+Requires-Dist: ruff>=0.17.6; extra == 'dev'
+```
+
+A5. The `-V` short flag was reviewed and does not exist. `cli.main` compares
+`args == ["--version"]` and nothing else, no test or document names `-V` for
+this tool, and `python -m mcp_caretaker -V` prints the usage line to stderr and
+exits 2, exactly like any other unrecognised first argument:
+
+```
+usage: mcp-caretaker check --trust [options] -- PROGRAM [ARGS...]
+```
+
 ## Decisions as built
 
 - D1 `--version` is handled in `cli.main` before the `check` dispatch:
@@ -64,7 +172,9 @@ this PR.
   `pyproject.toml` now declares `dynamic = ["version"]` with
   `[tool.hatch.version] path = "src/mcp_caretaker/__init__.py"`, so the release
   edit is one file, one line.
-- D2 Dependencies are `mcp>=2.3.0,<2.4` and `mcp-types>=2.3.0,<2.4`.
+- D2 Dependencies are `mcp>=2.3.0,<2.4` and `mcp-types>=2.3.0,<2.4`. This
+  supersedes the exact pin recorded in `docs/decisions/0001-sdk-and-protocol.md:120`;
+  that record is left as history and is not edited.
 - D3 Not applied: T0.3 found no release greater than 2.3.0 and below 2.4, so an
   `sdk-lowest` job would install the same version as the existing jobs and
   prove nothing. The existing test jobs resolve to the newest release in range,

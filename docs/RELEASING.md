@@ -30,7 +30,7 @@ __version__ = "0.0.0.dev0"
 `pyproject.toml` reads it through hatchling (`[tool.hatch.version]`), and the
 `--version` output and the JSON report read the same value. Change that one
 line, remove the `.dev0` part for a release, and rebuild. Do not edit a version
-anywhere else; there is no second copy.
+anywhere else; no other file defines it, and the build reads this line.
 
 ## Build and check the distributions
 
