@@ -172,5 +172,23 @@ or output file was stored in the repository.
 | M9 | `cli.py`: path checks moved after the run | `test_output_paths_validated_before_launch` | `1 failed in 4.43s` | `1 passed in 1.92s` | YES |
 
 M8 went red because the hanging server then used the 30 second default and
-the 30 second subprocess timeout fired. M6 remote proof is appended below
-after the Windows run.
+the 30 second subprocess timeout fired.
+
+M6 remote proof used the throwaway branch `mutation/pr5-m6-windows`,
+mutation commit `8e74b7910bbb85602214a98a37f8075befe8c98a`, parent commit
+`2672eea52481481b2e3513392386f1796e532da8`, and `workflow_dispatch` run
+`https://github.com/sarooo43/mcp-caretaker/actions/runs/45518255957`. The
+run conclusion was `failure`. Per-job results were: windows 3.11 job
+`138883214062` `failure`; ubuntu 3.13 job `138883214390` `failure`; windows
+3.13 job `138883214406` `failure`; ubuntu 3.11 job `138883214506`
+`failure`. The Windows 3.11 signed log showed `2 failed, 158 passed in
+93.01s`, including the hostile-text subprocess test failing because the
+unescaped terminal output could not be written. The branch was deleted and
+no pull request was opened from it.
+
+The mutation commit differs from the final head in
+`docs/decisions/0006-cli-and-reports.md` and `src/mcp_caretaker/report.py`.
+The final head includes this proof text and the restored escape function;
+the mutation commit contains the disabled escape and lacks the appended
+proof text. No canary value, base64 form, helper script, or output file
+was stored for the mutation proof.
