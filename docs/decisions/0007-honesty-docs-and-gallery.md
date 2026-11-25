@@ -99,6 +99,8 @@ tree for the packaging mutation.
 | M6 | `README.md` | Link target changed to a file that does not exist | `test_relative_markdown_links_point_to_existing_files` | 1 failed, reporting `README.md -> docs/limits-not-here.md`; restored |
 | M7 | `docs/gallery.md` | `CT-DESC-001:warn` changed to `CT-DESC-001:fail` in one row | `test_gallery_row[bad_no_descriptions.py]` | 1 failed, 33 passed; restored |
 | M8 | `docs/gallery.md` | Verdict token `CT-DESC-002:warn` changed to `CT-DESC-002:warns` in one row | `test_gallery_row[bad_description_length.py]`, `test_gallery_rows_are_well_formed` | 2 failed, 32 passed; restored |
+| B1 | `checks/description.py` | `if run >= WHITESPACE_RUN_LIMIT:` became `if run >= WHITESPACE_RUN_LIMIT * 100:`, so `CT-DESC-008` can no longer warn for the 80-space fixture | `test_gallery_row[bad_whitespace_run.py]` | red: 1 failed, `assert set() == {('CT-DESC-008', 'warn')}`; after restore green: 1 passed; `git diff --stat` empty; ruff check and format clean |
+| B2 | `docs/gallery.md` | The `bad_hostile_text.py` row was deleted from the Bad servers table | `test_every_bad_fixture_is_in_the_gallery` | red: 1 failed, `Extra items in the left set: 'bad_hostile_text.py'`; after restore green: 1 passed; `git diff --stat` empty |
 
 ## What is not verified here
 

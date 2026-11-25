@@ -15,10 +15,10 @@ The session is started with the configured `startup_timeout` and the handshake i
 Run one command per line with absolute paths: `<python>` is the interpreter that has this package installed and `<repo>` is this repository. This row is in [the fixture gallery](../gallery.md).
 
 ```sh
-<python> -m mcp_caretaker check --trust -- <python> <repo>/examples/servers/bad_hangs_on_startup.py
+<python> -m mcp_caretaker check --trust --startup-timeout 2 -- <python> <repo>/examples/servers/bad_hangs_on_startup.py
 ```
 
-The gallery lists the same row with `--startup-timeout 2` so the run stays short.
+The option keeps the run short, because this fixture never answers `initialize`.
 
 ## Verdict
 `pass`: the handshake completed. `fail`: the server exited before handshake, timed out, or raised another startup error. `not_tested`: the runner could not record the outcome; a reason is always present. `not_tested` is never counted or displayed as pass.
@@ -27,4 +27,4 @@ The gallery lists the same row with `--startup-timeout 2` so the run stays short
 Start a stdio MCP server that answers `initialize` with fields accepted by the installed SDK. Use an absolute script path in `argv`.
 
 ## Limits
-This does not add modern-handshake work, does not retry, and does not judge server intent. stderr is quoted evidence only.
+The handshake is the installed SDK's own; this check adds no extra handshake round, no retry, and no judgement of intent. Text the server wrote to stderr is quoted as evidence only.
