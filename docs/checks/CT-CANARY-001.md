@@ -10,7 +10,7 @@ A finding is a fact about where planted text appeared. Findings are not verdicts
 
 ## How it is decided
 
-`FAIL` is used for any finding. `PASS` requires at least one scanned answer with no finding. `not_tested` is used for zero answers, an earlier-stage `tools/list` failure, or robustness checks that did not complete. `not_tested` is never counted or displayed as pass. Every finding has `subject` set to where it was found, `detail` with the variable name, `exact` or `base64` encoding, and a redacted excerpt, and a constructed `tools/call` replay line.
+`FAIL` is used for any finding, and it wins over every reason: an answer that was scanned and contains a planted value fails this check even while the robustness stage is incomplete. `PASS` requires at least one scanned answer with no finding. `not_tested` is used for zero answers, an earlier-stage `tools/list` failure, or robustness checks that did not complete. When the robustness stage did not complete, the reason names how many of the six robustness checks failed, how many were `not_tested`, and how many `tools/call` answers were scanned, as in `robustness checks: 0 failed, 2 not tested; tools/call answers scanned: 6`. `not_tested` is never counted or displayed as pass. Every finding has `subject` set to where it was found, `detail` with the variable name, `exact` or `base64` encoding, and a redacted excerpt, and a constructed `tools/call` replay line.
 
 ## How to reproduce
 
@@ -42,4 +42,6 @@ Do not place environment text or its standard base64 form in tool content, struc
 - Only the value encoded on its own with standard base64 is detected; no other encoding is generated.
 - Changes by time, by more calls, or by specific arguments are not caught; only observed answers are compared.
 - Stderr and stray stdout are covered by CT-CANARY-003 with a stderr cap; this page covers tool answers.
+- A robustness check that is `not_tested` only because probes were skipped still makes this check `not_tested`, even when answers were scanned.
+- A finding still fails this check in that situation, because findings are checked before any reason.
 - Startup failure leaves this check `not_tested`. `not_tested` is never counted or displayed as pass.

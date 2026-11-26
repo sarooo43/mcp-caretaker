@@ -10,7 +10,7 @@ A successful result for input that does not match `inputSchema` gives callers an
 
 ## How it is decided
 
-One wrong-type value is built from each eligible tool's schema and sent in a `tools/call`. A success is `warn` because bad input was accepted, no answer or a child exit is `fail`, and a proper rejection is `pass`. The summary counts tested and skipped probes.
+One wrong-type value is built from each eligible tool's schema and sent in a `tools/call`. A success is `warn` because bad input was accepted, no answer or a child exit is `fail`, and a proper rejection is `pass`. The summary counts tested and skipped probes. No wrong-type value can be built, so the probe is skipped, when the schema is not an object, when `properties` is not an object, when the tool has no `required` list of property names, or when a required name has no property entry. A skipped planned probe makes the check `not_tested` and never `pass`.
 
 ## How to reproduce
 

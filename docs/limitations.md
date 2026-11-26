@@ -89,6 +89,14 @@ and still write files or change state. Only test servers you trust.
   `not_tested` or counted as skipped coverage, never as pass.
 - The large string and the valid call are only sent to tools whose raw
   `readOnlyHint` is exactly `true`.
+- No valid input is generated for a tool whose `inputSchema`, or any of its
+  top-level properties, uses one of the refused keys `pattern`, `format`,
+  `minLength`, `maxLength`, `minimum`, `maximum`, `exclusiveMinimum`,
+  `exclusiveMaximum`, `multipleOf`, `minItems`, `maxItems`, `anyOf`, `oneOf`,
+  `allOf`, `$ref`, `not` or `if`. The large-string and valid-call probes for
+  that tool are then skipped, so the two checks report it as skipped coverage
+  instead of generating a value that may not meet the rule the tool states.
+  The wrong-type and missing-required probes are not affected by these keys.
 - Coverage is partial: one input shape per tool is not a thorough test.
 - All thresholds in `src/mcp_caretaker/thresholds.py` are guesses, not
   measurements: `DESC_MIN_LENGTH = 10`, `DESC_MAX_LENGTH = 1000`,

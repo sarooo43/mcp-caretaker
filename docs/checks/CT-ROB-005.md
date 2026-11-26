@@ -10,7 +10,7 @@ A call with generated valid input should return a successful tool result so call
 
 ## How it is decided
 
-Valid input is generated from each read-only tool's schema. A child exit is `fail`; an error result, a JSON-RPC error or no answer is `warn`; a success is `pass`. When input cannot be generated the probe is skipped, and the check is `not_tested` when nothing else ran.
+Valid input is generated from each read-only tool's schema. A child exit is `fail`; an error result, a JSON-RPC error or no answer is `warn`; a success is `pass`. When input cannot be generated the probe is skipped, and the check is `not_tested` when nothing else ran. A `warn` from an error result or a JSON-RPC error says the server rejected a generated placeholder value, and that can be correct: the schema may leave out a format rule the tool enforces, and the summary then says so in the same words.
 
 ## How to reproduce
 
@@ -33,4 +33,4 @@ Accept the generated values that match `inputSchema`, and return a successful to
 
 ## Limits
 
-`readOnlyHint` is untrusted, so a mislabelled writer receives valid and huge calls. Every probe sends a real request, so a server may act on it. Generated values are shown as placeholders. Replay lines are constructed, not captured, and need the initialize handshake first; they are not byte-exact. The numbers `1 MiB, 50 tools, 120 s` are guesses that live in `thresholds.py`. At most 4 probes per tool by design. Nested properties are not probed.
+`readOnlyHint` is untrusted, so a mislabelled writer receives valid and huge calls. Every probe sends a real request, so a server may act on it. Generated values are shown as placeholders. No valid input is generated for a tool whose `inputSchema`, or any of its top-level properties, uses one of the refused keys listed in [the limits page](../limitations.md); its valid-call probe is then skipped, and the check is `not_tested` when no other valid call ran. A generated value meets the declared types only, never a format rule the schema does not state. Replay lines are constructed, not captured, and need the initialize handshake first; they are not byte-exact. The numbers `1 MiB, 50 tools, 120 s` are guesses that live in `thresholds.py`. At most 4 probes per tool by design. Nested properties are not probed.

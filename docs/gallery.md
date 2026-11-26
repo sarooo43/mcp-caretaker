@@ -51,6 +51,7 @@ path and put the option before the first `--`.
 | bad_unknown_tool.py | - | - | CT-ROB-003:warn | Answers a call for an unknown tool name |
 | bad_huge_input.py | - | --call-timeout 2 | CT-ROB-001:warn, CT-ROB-002:warn, CT-ROB-003:warn, CT-ROB-004:warn | Delays every call; the option keeps the run short |
 | bad_valid_call.py | - | - | CT-ROB-005:warn | Rejects the generated valid call |
+| bad_valid_call_mixed.py | - | - | CT-ROB-005:warn | One read-only tool accepts the generated valid call and one read-only tool with no required property rejects every call |
 | bad_dies_after_probes.py | - | - | CT-ROB-006:fail | Exits after the planned probes, so the liveness list fails |
 | bad_rug_pull.py | reconnect_description | - | CT-ROB-004:warn, CT-ROB-005:warn, CT-STAB-001:fail | Description changes on the second connection |
 | bad_rug_pull.py | after_calls_description | - | CT-ROB-004:warn, CT-ROB-005:warn, CT-STAB-002:fail | Description changes after calls; the final liveness list differs |
@@ -69,6 +70,7 @@ Some variants need a test-only environment variable, so they are not rows:
 - `bad_tools_list_error.py` zero-tools variant: `CARETAKER_TEST_ZERO_TOOLS=1`.
 - `bad_dies_after_probes.py` other stop points: `CARETAKER_TEST_MODE=call` or `list`.
 - `bad_rug_pull.py` second-start failure: `CARETAKER_TEST_SECOND_START_FAIL=1`.
+- `bad_valid_call_mixed.py` reject-all variant: `CARETAKER_TEST_MODE=reject_all` makes the accepting tool reject the generated valid call as well.
 - `bad_ignores_stdin_close.py` pid record: `CARETAKER_TEST_PIDFILE`.
 - `recording_server.py` call log: `CARETAKER_TEST_CALLLOG`.
 

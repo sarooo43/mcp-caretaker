@@ -10,7 +10,7 @@ A successful result without required properties gives callers an unclear contrac
 
 ## How it is decided
 
-One call is sent for each eligible tool with a required property removed. A success is `warn`, no answer or a child exit is `fail`, and a proper rejection is `pass`. The summary counts tested and skipped probes.
+One call is sent for each eligible tool with a required property removed. A success is `warn`, no answer or a child exit is `fail`, and a proper rejection is `pass`. The summary counts tested and skipped probes. No missing-required probe can be planned, so it is skipped, when the tool has no `required` list of property names: the list is absent, empty, or contains an entry that is not a string. A skipped planned probe makes the check `not_tested` and never `pass`.
 
 ## How to reproduce
 

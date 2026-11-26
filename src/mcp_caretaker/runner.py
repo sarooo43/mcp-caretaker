@@ -234,12 +234,19 @@ async def run_checks(spec: LaunchSpec, *, confirmed: bool) -> RunResult:
                         for check_id in ROBUSTNESS_IDS:
                             results_by_id[check_id] = _not_tested(check_id, reason)
                         earlier_failure_reason = reason
-                    if any(
-                        results_by_id[check_id].verdict
-                        in (Verdict.FAIL, Verdict.NOT_TESTED)
+                    failed_count = sum(
+                        results_by_id[check_id].verdict is Verdict.FAIL
                         for check_id in ROBUSTNESS_IDS
-                    ):
-                        earlier_failure_reason = "robustness checks did not complete"
+                    )
+                    not_tested_count = sum(
+                        results_by_id[check_id].verdict is Verdict.NOT_TESTED
+                        for check_id in ROBUSTNESS_IDS
+                    )
+                    if failed_count or not_tested_count:
+                        earlier_failure_reason = (
+                            f"robustness checks: {failed_count} failed,"
+                            f" {not_tested_count} not tested"
+                        )
                 ctx = replace(
                     ctx,
                     stdout_noise_count=session.stdout_noise_count,

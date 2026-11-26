@@ -234,6 +234,29 @@ async def test_valid_call_error_result_warns_rob_005() -> None:
 
 
 @pytest.mark.anyio
+async def test_valid_call_mixed_counts_only_the_rejected_answer() -> None:
+    run = await run_checks(_spec("bad_valid_call_mixed.py"), confirmed=True)
+    result = _by_id(run)["CT-ROB-005"]
+    assert result.verdict is Verdict.WARN
+    assert result.summary.startswith("2 tested, 0 skipped; 1 answer differed")
+    assert "the tool has format rules its schema does not state" in result.summary
+
+
+@pytest.mark.anyio
+async def test_valid_call_reject_all_counts_every_answer() -> None:
+    run = await run_checks(
+        _spec(
+            "bad_valid_call_mixed.py",
+            extra_env={"CARETAKER_TEST_MODE": "reject_all"},
+        ),
+        confirmed=True,
+    )
+    result = _by_id(run)["CT-ROB-005"]
+    assert result.verdict is Verdict.WARN
+    assert result.summary.startswith("2 tested, 0 skipped; 2 answers differed")
+
+
+@pytest.mark.anyio
 async def test_valid_call_crash_fails_rob_005() -> None:
     run = await run_checks(
         _spec(
