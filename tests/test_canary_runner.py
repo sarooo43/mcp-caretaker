@@ -152,6 +152,28 @@ async def test_zero_tools_makes_canary_001_not_tested() -> None:
 
 
 @pytest.mark.anyio
+async def test_reason_counts_not_tested_robustness_checks_and_answers() -> None:
+    run = await run_checks(_spec("bad_valid_call_mixed.py"), confirmed=True)
+    result = _by_id(run)["CT-CANARY-001"]
+    assert result.verdict is Verdict.NOT_TESTED
+    assert result.reason == (
+        "robustness checks: 0 failed, 2 not tested; 6 tools/call answers were scanned"
+    )
+    _assert_no_canary_text(run)
+
+
+@pytest.mark.anyio
+async def test_reason_counts_failed_robustness_checks_and_answers() -> None:
+    run = await run_checks(_spec("bad_dies_after_probes.py"), confirmed=True)
+    result = _by_id(run)["CT-CANARY-001"]
+    assert result.verdict is Verdict.NOT_TESTED
+    assert result.reason == (
+        "robustness checks: 1 failed, 0 not tested; 5 tools/call answers were scanned"
+    )
+    _assert_no_canary_text(run)
+
+
+@pytest.mark.anyio
 async def test_stderr_cap_hides_later_value_and_reports_bytes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

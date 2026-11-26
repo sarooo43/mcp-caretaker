@@ -511,8 +511,7 @@ def aggregate_results(records: list[ProbeRecord]) -> dict[str, CheckResult]:
                 verdict = Verdict.NOT_TESTED
         fail_count = sum(item in ("exited", "no_answer", "fail") for item in outcomes)
         warn_count = sum(
-            item in ("success", "error_result", "jsonrpc_error", "no_answer")
-            for item in outcomes
+            item in FAILING_OUTCOMES.get(check_id, frozenset()) for item in outcomes
         )
         prefix = f"{len(tested)} tested, {len(skipped)} skipped; "
         if verdict is Verdict.FAIL:
@@ -520,7 +519,15 @@ def aggregate_results(records: list[ProbeRecord]) -> dict[str, CheckResult]:
                 f"{fail_count} probes had no answer, child exit, or liveness failure."
             )
         elif verdict is Verdict.WARN:
-            text = f"{warn_count} answers differed from the expected answer."
+            plural = "" if warn_count == 1 else "s"
+            text = f"{warn_count} answer{plural} differed from the expected answer."
+            if check_id == "CT-ROB-005" and any(
+                item in ("error_result", "jsonrpc_error") for item in outcomes
+            ):
+                text += (
+                    " The server rejected a generated placeholder value; this can be"
+                    " correct when the tool has format rules its schema does not state."
+                )
         elif verdict is Verdict.NOT_TESTED:
             text = "at least one planned probe was skipped."
         else:

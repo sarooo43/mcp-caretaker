@@ -7,6 +7,7 @@ from pathlib import Path
 
 from mcp_caretaker.checks import CHECKS
 from mcp_caretaker.checks.description import DESCRIPTION_CHECK_FUNCTIONS
+from mcp_caretaker.checks.robustness import BANNED_SCHEMA_KEYS
 from mcp_caretaker.checks.startup import STARTUP_CHECK_FUNCTIONS, StartupContext
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -76,6 +77,12 @@ def test_thresholds_are_documented_as_guesses() -> None:
         "2000",
     ):
         assert f"= {number}" in text
+
+
+def test_limitations_lists_every_refused_schema_key() -> None:
+    text = (ROOT / "docs/limitations.md").read_text(encoding="utf-8")
+    missing = [key for key in BANNED_SCHEMA_KEYS if f"`{key}`" not in text]
+    assert missing == []
 
 
 def test_every_docs_page_matches_a_registered_check() -> None:
