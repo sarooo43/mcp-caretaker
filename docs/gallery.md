@@ -19,6 +19,11 @@ Reproduce any row with one shell command per line, using absolute paths:
 For a row with an argument or an option, keep that argument after the fixture
 path and put the option before the first `--`.
 
+The test that checks this table prints one ASCII line per row, in table order, so
+the CI log shows what each row expected and what the real run returned:
+`gallery: <fixture> | expected <ID> <verdict> | got <ID> <verdict> | OK`, with
+`MISMATCH` as the last field when a run differs from the table.
+
 ## Control servers
 
 | Fixture | Arguments | Options | Expected warn/fail results | Note |
