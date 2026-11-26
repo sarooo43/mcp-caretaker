@@ -196,7 +196,10 @@ def test_threshold_constants_have_expected_values_and_comments() -> None:
 def test_pyproject_runtime_dependencies_are_unchanged() -> None:
     with (ROOT / "pyproject.toml").open("rb") as handle:
         data = tomllib.load(handle)
-    assert data["project"]["dependencies"] == ["mcp==2.3.0", "mcp-types==2.3.0"]
+    assert data["project"]["dependencies"] == [
+        "mcp>=2.3.0,<2.4",
+        "mcp-types>=2.3.0,<2.4",
+    ]
 
 
 def test_shutdown_grace_default_and_validation() -> None:

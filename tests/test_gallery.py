@@ -128,3 +128,48 @@ def test_gallery_rows_are_well_formed() -> None:
         text = row["Expected warn/fail results"]
         if text != "none":
             assert all(EXPECTED_RE.match(item.strip()) for item in text.split(","))
+
+
+FENCE_RE = re.compile(r"```sh\n(.+?)\n```", re.DOTALL)
+
+
+def _page_row_target(page: Path) -> tuple[str, list[str], list[str]] | None:
+    """Return the page's reproduce target as fixture, arguments, options."""
+    match = FENCE_RE.search(page.read_text(encoding="utf-8"))
+    if match is None:
+        return None
+    tokens = match.group(1).split()
+    if not tokens:
+        return None
+    if tokens[0] != "<python>":
+        return tokens[1].rsplit("/", 1)[-1], tokens[2:], []
+    split = tokens.index("--")
+    return tokens[split + 2].rsplit("/", 1)[-1], tokens[split + 3 :], tokens[5:split]
+
+
+def test_every_page_reproduce_command_matches_a_gallery_row() -> None:
+    problems: list[str] = []
+    for page in sorted((ROOT / "docs/checks").glob("CT-*.md")):
+        target = _page_row_target(page)
+        if target is None:
+            problems.append(f"{page.name}: no reproduce command")
+            continue
+        fixture, arguments, options = target
+        matches = [
+            row
+            for row in ROWS
+            if row["Fixture"] == fixture
+            and _split(row["Arguments"]) == arguments
+            and _split(row["Options"]) == options
+        ]
+        if len(matches) != 1:
+            problems.append(f"{page.name}: {len(matches)} gallery rows match {target}")
+            continue
+        listed = {
+            check_id
+            for check_id, verdict in _expected(matches[0])
+            if verdict in ("warn", "fail")
+        }
+        if page.stem not in listed:
+            problems.append(f"{page.name}: row does not list {page.stem}")
+    assert problems == []

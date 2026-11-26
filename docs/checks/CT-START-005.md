@@ -25,4 +25,4 @@ Run one command per line with absolute paths: `<python>` is the interpreter that
 Stop reading and exit when stdin reaches EOF.
 
 ## Limits
-The grace period is configurable on `LaunchSpec`. POSIX and Windows use different process-tree helpers; local Windows verification is limited to CI.
+The grace period is configurable on `LaunchSpec`. The cleanup uses POSIX process groups on POSIX and the SDK's Windows helpers on Windows; the Windows path is exercised by the test suite in the Windows CI jobs.

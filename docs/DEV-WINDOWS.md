@@ -30,3 +30,9 @@ $server = (Resolve-Path examples\\servers\\clean_server.py).Path
 Expected: exit code 0, 25 `[PASS]` lines, and `report.json` plus `report.md`
 in the current folder. A pass is not a safety guarantee. Running a server
 executes its code; this tool is not a sandbox.
+
+## Releasing
+
+The release steps, including the build and upload commands and the README lines
+that change after the first upload, are in [RELEASING.md](RELEASING.md). They
+are run by the owner, not by an agent, and no token goes into the repository.

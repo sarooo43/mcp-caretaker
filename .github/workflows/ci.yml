@@ -36,3 +36,56 @@ jobs:
         run: ruff format --check
       - name: Pytest
         run: pytest -q
+
+  package:
+    name: package (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build and check distributions
+        shell: bash
+        run: |
+          python -m pip install build twine
+          python -m build
+          python -m twine check dist/*
+      - name: Install the wheel into a fresh venv outside the checkout
+        shell: bash
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          if [ -x "$RUNNER_TEMP/venv/bin/python" ]; then
+            PY="$RUNNER_TEMP/venv/bin/python"
+            CLI="$RUNNER_TEMP/venv/bin/mcp-caretaker"
+          else
+            PY="$RUNNER_TEMP/venv/Scripts/python.exe"
+            CLI="$RUNNER_TEMP/venv/Scripts/mcp-caretaker.exe"
+          fi
+          echo "PY=$PY" >> "$GITHUB_ENV"
+          echo "CLI=$CLI" >> "$GITHUB_ENV"
+          "$PY" -m pip install dist/*.whl
+          "$PY" -m pip check
+          "$PY" -m pip list
+      - name: Installed command reports the built version
+        shell: bash
+        working-directory: ${{ runner.temp }}
+        run: |
+          VERSION="$("$PY" -c "import importlib.metadata as m; print(m.version('mcp-caretaker'))")"
+          test "$("$CLI" --version)" = "mcp-caretaker $VERSION"
+      - name: Installed command runs one clean-server check
+        shell: bash
+        working-directory: ${{ runner.temp }}
+        run: |
+          "$CLI" check --trust --json "$RUNNER_TEMP/report.json" -- "$PY" "$GITHUB_WORKSPACE/examples/servers/clean_server.py"
+          test -s "$RUNNER_TEMP/report.json"
