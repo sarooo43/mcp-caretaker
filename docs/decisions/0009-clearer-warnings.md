@@ -145,7 +145,7 @@ already counts:
 ```python
 reason = earlier_failure_reason or "no tools/call answers were scanned"
 if earlier_failure_reason is not None:
-    reason += f"; {tracker.answer_count} tools/call answers were scanned"
+    reason += f"; tools/call answers scanned: {tracker.answer_count}"
 ```
 
 Which situations produce `not_tested` is unchanged: zero answers, a `tools/list`
@@ -158,11 +158,18 @@ Observed reasons for the mixed fixture, before and after:
 
 | Check | Before | After |
 | --- | --- | --- |
-| `CT-CANARY-001` | `robustness checks did not complete` | `robustness checks: 0 failed, 2 not tested; 6 tools/call answers were scanned` |
+| `CT-CANARY-001` | `robustness checks did not complete` | `robustness checks: 0 failed, 2 not tested; tools/call answers scanned: 6` |
 
 For the failing variant (`bad_dies_after_probes.py`, `CT-ROB-006` fails) the
-reason is `robustness checks: 1 failed, 0 not tested; 5 tools/call answers were
-scanned`, so the two causes are distinguished by the numbers themselves.
+reason is `robustness checks: 1 failed, 0 not tested; tools/call answers
+scanned: 5`, so the two causes are distinguished by the numbers themselves.
+
+The appended clause reads `; tools/call answers scanned: N` rather than
+`; N tools/call answers were scanned`, because a run that scanned one answer
+produced `1 tools/call answers were scanned` in the zero-tools case. Putting
+the number after the label removes the singular/plural mismatch without adding
+plural logic, and it is a text change only: no verdict, count or control flow
+changed.
 
 Leak behaviour, quoted from `canary.py:274-286`: the findings branch returns
 `Verdict.FAIL` before the reason branch is reached, so a planted value in a
@@ -245,6 +252,6 @@ each restore.
 | --- | --- | --- | --- |
 | M1 | warn count back to the old fixed tuple | `test_valid_call_mixed_counts_only_the_rejected_answer` | red: summary was `2 tested, 0 skipped; 2 answers differed...`; green after restore |
 | M2 | D2 sentence removed | `test_valid_call_mixed_counts_only_the_rejected_answer` | red: summary was `2 tested, 0 skipped; 1 answer differed from the expected answer.`; green after restore |
-| M3 | `CT-CANARY-001` reason back to the generic text | `test_reason_counts_not_tested_robustness_checks_and_answers` | red: reason was `robustness checks did not complete; 6 tools/call answers were scanned`; green after restore |
+| M3 | `CT-CANARY-001` reason back to the generic text | `test_reason_counts_not_tested_robustness_checks_and_answers` | red: reason was `robustness checks did not complete; tools/call answers scanned: 6`; green after restore |
 | M4 | `multipleOf` removed from the limitations list | `test_limitations_lists_every_refused_schema_key` | red: `assert ['multipleOf'] == []`; green after restore |
 | M5 | not applicable | - | no reason text carries a key name, so there is nothing to remove |

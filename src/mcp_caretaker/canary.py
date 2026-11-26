@@ -280,7 +280,7 @@ def build_answer_result(
     if earlier_failure_reason is not None or tracker.answer_count == 0:
         reason = earlier_failure_reason or "no tools/call answers were scanned"
         if earlier_failure_reason is not None:
-            reason += f"; {tracker.answer_count} tools/call answers were scanned"
+            reason += f"; tools/call answers scanned: {tracker.answer_count}"
         return _result(
             CANARY_IDS[0],
             Verdict.NOT_TESTED,

@@ -157,7 +157,7 @@ async def test_reason_counts_not_tested_robustness_checks_and_answers() -> None:
     result = _by_id(run)["CT-CANARY-001"]
     assert result.verdict is Verdict.NOT_TESTED
     assert result.reason == (
-        "robustness checks: 0 failed, 2 not tested; 6 tools/call answers were scanned"
+        "robustness checks: 0 failed, 2 not tested; tools/call answers scanned: 6"
     )
     _assert_no_canary_text(run)
 
@@ -168,7 +168,7 @@ async def test_reason_counts_failed_robustness_checks_and_answers() -> None:
     result = _by_id(run)["CT-CANARY-001"]
     assert result.verdict is Verdict.NOT_TESTED
     assert result.reason == (
-        "robustness checks: 1 failed, 0 not tested; 5 tools/call answers were scanned"
+        "robustness checks: 1 failed, 0 not tested; tools/call answers scanned: 5"
     )
     _assert_no_canary_text(run)
 
