@@ -1,0 +1,302 @@
+{
+  "schema_version": 1,
+  "tool": {
+    "name": "mcp-caretaker",
+    "version": "0.0.0.dev0"
+  },
+  "server": {
+    "program": "mcp-server-fetch",
+    "argument_count": 0
+  },
+  "protocol_version": "2025-11-25",
+  "counts": {
+    "pass": 22,
+    "warn": 0,
+    "fail": 0,
+    "not_tested": 3
+  },
+  "results": [
+    {
+      "check_id": "CT-START-001",
+      "title": "Server starts and completes handshake",
+      "verdict": "pass",
+      "summary": "Server started and completed the handshake.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-START-002",
+      "title": "Handshake reports server name and version",
+      "verdict": "pass",
+      "summary": "2 of 2 handshake fields are present.",
+      "evidence": [
+        {
+          "subject": "protocolVersion",
+          "detail": "2025-11-25",
+          "replay": null
+        },
+        {
+          "subject": "serverInfo.name",
+          "detail": "mcp-fetch",
+          "replay": null
+        },
+        {
+          "subject": "serverInfo.version",
+          "detail": "2026.11.11",
+          "replay": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "check_id": "CT-START-003",
+      "title": "tools/list works",
+      "verdict": "pass",
+      "summary": "tools/list returned 1 tools across 1 pages.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-START-004",
+      "title": "No non-protocol text on stdout",
+      "verdict": "pass",
+      "summary": "0 non-protocol stdout lines were seen.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-START-005",
+      "title": "Server exits after input is closed",
+      "verdict": "pass",
+      "summary": "Server exited by itself after input was closed.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-DESC-001",
+      "title": "Every tool has a description",
+      "verdict": "pass",
+      "summary": "0 of 1 tools have no description.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-DESC-002",
+      "title": "Description length is within limits",
+      "verdict": "pass",
+      "summary": "0 of 1 descriptions are outside the length limits.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-DESC-003",
+      "title": "Tool names are unique",
+      "verdict": "pass",
+      "summary": "0 duplicate tool names were found in 1 tools.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-DESC-004",
+      "title": "Every tool has an object inputSchema",
+      "verdict": "pass",
+      "summary": "0 of 1 tools have no object inputSchema.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-DESC-005",
+      "title": "Every top-level property is typed",
+      "verdict": "pass",
+      "summary": "0 top-level properties are not typed.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-DESC-006",
+      "title": "Every top-level property has a description",
+      "verdict": "pass",
+      "summary": "0 top-level properties have no description.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-DESC-007",
+      "title": "No hidden characters in scanned text",
+      "verdict": "pass",
+      "summary": "0 hidden characters were found in scanned text.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-DESC-008",
+      "title": "No long horizontal whitespace runs",
+      "verdict": "pass",
+      "summary": "0 horizontal whitespace runs were found.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-DESC-009",
+      "title": "Tool names match the spec name rule",
+      "verdict": "pass",
+      "summary": "0 of 1 tool names do not match the spec name rule.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-ROB-001",
+      "title": "Wrong-type input is rejected",
+      "verdict": "pass",
+      "summary": "1 tested, 0 skipped; all recorded answers met the rule.",
+      "evidence": [
+        {
+          "subject": "probe CT-ROB-001 tool[0] fetch wrong_type",
+          "detail": "{\"tool\":\"fetch\",\"phase\":\"wrong_type\",\"args\":{\"url\":{\"type\":\"dict\",\"length\":1}},\"outcome\":\"error_result\",\"answer\":{\"is_error\":true,\"text\":\"Error executing tool fetch: 1 validation error for fetchArguments\\nurl\\n  URL input should be a string or URL [type=url_ty\"}}",
+          "replay": null
+        },
+        {
+          "subject": "coverage",
+          "detail": "1 tested, 0 skipped",
+          "replay": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "check_id": "CT-ROB-002",
+      "title": "Missing required input is rejected",
+      "verdict": "pass",
+      "summary": "1 tested, 0 skipped; all recorded answers met the rule.",
+      "evidence": [
+        {
+          "subject": "probe CT-ROB-002 tool[0] fetch missing_required",
+          "detail": "{\"tool\":\"fetch\",\"phase\":\"missing_required\",\"args\":{},\"outcome\":\"error_result\",\"answer\":{\"is_error\":true,\"text\":\"Error executing tool fetch: 1 validation error for fetchArguments\\nurl\\n  Field required [type=missing, input_value={}, in\"}}",
+          "replay": null
+        },
+        {
+          "subject": "coverage",
+          "detail": "1 tested, 0 skipped",
+          "replay": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "check_id": "CT-ROB-003",
+      "title": "Unknown tool name is rejected",
+      "verdict": "pass",
+      "summary": "1 tested, 0 skipped; all recorded answers met the rule.",
+      "evidence": [
+        {
+          "subject": "probe CT-ROB-003 tool[-1] caretaker_no_such_tool unknown_tool",
+          "detail": "{\"tool\":\"caretaker_no_such_tool\",\"phase\":\"unknown_tool\",\"args\":{},\"outcome\":\"jsonrpc_error\",\"answer\":{\"error\":\"MCPError: Unknown tool: caretaker_no_such_tool\"}}",
+          "replay": null
+        },
+        {
+          "subject": "coverage",
+          "detail": "1 tested, 0 skipped",
+          "replay": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "check_id": "CT-ROB-004",
+      "title": "Large string input is handled",
+      "verdict": "not_tested",
+      "summary": "0 tested, 1 skipped; at least one planned probe was skipped.",
+      "evidence": [
+        {
+          "subject": "probe CT-ROB-004 tool[-1] tools/list huge_string",
+          "detail": "{\"tool\":\"tools/list\",\"phase\":\"huge_string\",\"outcome\":\"skipped\",\"reason\":\"valid input could not be generated for a huge string\"}",
+          "replay": null
+        },
+        {
+          "subject": "coverage",
+          "detail": "0 tested, 1 skipped",
+          "replay": null
+        }
+      ],
+      "reason": "valid input could not be generated for a huge string"
+    },
+    {
+      "check_id": "CT-ROB-005",
+      "title": "Valid read-only call succeeds",
+      "verdict": "not_tested",
+      "summary": "0 tested, 1 skipped; at least one planned probe was skipped.",
+      "evidence": [
+        {
+          "subject": "probe CT-ROB-005 tool[0] fetch valid_call",
+          "detail": "{\"tool\":\"fetch\",\"phase\":\"valid_call\",\"outcome\":\"skipped\",\"reason\":\"valid input could not be generated for this tool\"}",
+          "replay": null
+        },
+        {
+          "subject": "coverage",
+          "detail": "0 tested, 1 skipped",
+          "replay": null
+        }
+      ],
+      "reason": "valid input could not be generated for this tool"
+    },
+    {
+      "check_id": "CT-ROB-006",
+      "title": "Server remains responsive after probes",
+      "verdict": "pass",
+      "summary": "1 tested, 0 skipped; all recorded answers met the rule.",
+      "evidence": [
+        {
+          "subject": "probe CT-ROB-006 tool[-1] tools/list liveness",
+          "detail": "{\"tool\":\"tools/list\",\"phase\":\"liveness\",\"args\":{},\"outcome\":\"pass\",\"answer\":{}}",
+          "replay": null
+        },
+        {
+          "subject": "coverage",
+          "detail": "1 tested, 0 skipped",
+          "replay": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "check_id": "CT-CANARY-001",
+      "title": "Canary values are absent from tool answers",
+      "verdict": "not_tested",
+      "summary": "Check was not tested.",
+      "evidence": [],
+      "reason": "robustness checks: 0 failed, 2 not tested; tools/call answers scanned: 3"
+    },
+    {
+      "check_id": "CT-CANARY-002",
+      "title": "Canary values are absent from handshake and tool listings",
+      "verdict": "pass",
+      "summary": "handshake and 1 tools/list pages scanned; no findings.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-CANARY-003",
+      "title": "Canary values are absent from stderr and stray stdout",
+      "verdict": "pass",
+      "summary": "82 stderr bytes scanned across 2 session(s) and 0 stdout lines scanned; no findings.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-STAB-001",
+      "title": "Tool listings are stable across a second session",
+      "verdict": "pass",
+      "summary": "1 common tools unchanged.",
+      "evidence": [],
+      "reason": null
+    },
+    {
+      "check_id": "CT-STAB-002",
+      "title": "Tool listing is stable after probes",
+      "verdict": "pass",
+      "summary": "1 common tools unchanged.",
+      "evidence": [],
+      "reason": null
+    }
+  ]
+}
