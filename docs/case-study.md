@@ -69,6 +69,10 @@ git init
 git -c user.name=case-study -c user.email=case-study@example.invalid commit --allow-empty -m initial
 ```
 
+The path `/tmp/ct8b/repo` in the saved reports is that throwaway folder, created
+for this run; it is not a path inside this repository, and it does not exist on
+the machine of anyone who reproduces the run.
+
 The three runs, from the root of this checkout:
 
 ```sh
@@ -120,7 +124,7 @@ Each item is a limit of this tool, not a statement about the server.
 | git | CT-ROB-005 | `warn`: `6 tested, 2 skipped`, and all 6 answers differed because every probe sent the placeholder `A` as `repo_path`, which the server rejected. The tool has no way to invent a real repository path, so this is a probe limit. |
 | git | CT-ROB-005 | 2 of the read-only tools were skipped with `valid input could not be generated for this tool` (`git_log` and `git_branch`). |
 | fetch | CT-ROB-004 | `not_tested`: `valid input could not be generated for a huge string`. |
-| fetch | CT-ROB-005 | `not_tested`: `valid input could not be generated for this tool` for `fetch`, whose `url` property the tool will not invent a value for. Nothing was fetched, so no probe made a network request. |
+| fetch | CT-ROB-005 | `not_tested`: `valid input could not be generated for this tool` for `fetch`, whose `url` property the tool will not invent a value for. This page makes no claim about network activity. |
 | fetch | CT-CANARY-001 | `not_tested` as a consequence of the two `not_tested` robustness checks. |
 
 ## What was not run or measured
@@ -131,7 +135,9 @@ Each item is a limit of this tool, not a statement about the server.
   started once, for one session.
 - Stability was checked across a second session inside one run
   (`CT-STAB-001`, `CT-STAB-002`); nothing was repeated across runs or machines.
-- No network request was made by a probe in any of the three runs.
+- Network activity was not measured. The report lists CT-ROB-004 and CT-ROB-005 as
+  `not_tested` for the fetch server because valid input could not be generated for
+  its tool. This page makes no claim about network activity.
 
 ## How to read a result
 
@@ -149,5 +155,6 @@ The full definitions and every known limit are in
 
 Use the commands in [How it was run](#how-it-was-run), with your own `/tmp` paths
 and your own throwaway repository, and compare your `Totals:` line with the
-counts above. Expect differences: the time server reads the clock, and the tool
-sends fixed placeholder values that a server may answer differently over time.
+counts above. The evidence text can differ between runs because the time server
+reports its own clock. This page does not claim that totals are identical on
+every run.
