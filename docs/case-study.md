@@ -26,16 +26,14 @@ number on this page, and they are committed exactly as the tool wrote them.
 
 ## The servers
 
-| Package | Version | License | Reach |
+| Package | Version | License | Package summary |
 | --- | --- | --- | --- |
-| [mcp-server-time](https://github.com/modelcontextprotocol/servers/tree/main/src/time) | 2026.11.18 | MIT | local |
-| [mcp-server-git](https://github.com/modelcontextprotocol/servers/tree/main/src/git) | 2026.11.18 | MIT | local |
-| [mcp-server-fetch](https://github.com/modelcontextprotocol/servers/tree/main/src/fetch) | 2026.11.11 | MIT | network-capable |
+| [mcp-server-time](https://github.com/modelcontextprotocol/servers/tree/main/src/time) | 2026.11.18 | MIT | A Model Context Protocol server providing tools for time queries and timezone conversions for LLMs |
+| [mcp-server-git](https://github.com/modelcontextprotocol/servers/tree/main/src/git) | 2026.11.18 | MIT | A Model Context Protocol server providing tools to read, search, and manipulate Git repositories programmatically via LLMs |
+| [mcp-server-fetch](https://github.com/modelcontextprotocol/servers/tree/main/src/fetch) | 2026.11.11 | MIT | A Model Context Protocol server providing tools to fetch and convert web content for usage by LLMs |
 
-Package name, version, license and reach come from the installed package
-metadata. The `Summary` field of each package is the source of the last column:
-`tools for time queries and timezone conversions`, `tools to read, search, and
-manipulate Git repositories`, and `tools to fetch and convert web content`.
+Package name, version, license and summary come from the installed package
+metadata.
 
 ## How it was run
 
@@ -49,10 +47,12 @@ of `main`, installed with `pip install .` into its own virtual environment.
 | mcp-types | 2.3.0 |
 | mcp-caretaker | 0.0.0.dev0 |
 
-Each server was installed in a separate virtual environment under `/tmp`, so its
-own `mcp` version could not clash with the caretaker's. Run one command per line:
+The caretaker had its own virtual environment under `/tmp`, and each server had a
+separate one, so their `mcp` versions could not clash. Run one command per line:
 
 ```sh
+python -m venv /tmp/ct8b/venv-caretaker
+/tmp/ct8b/venv-caretaker/bin/pip install .
 python -m venv /tmp/ct8b/venv-time
 /tmp/ct8b/venv-time/bin/pip install mcp-server-time==2026.11.18
 python -m venv /tmp/ct8b/venv-git
@@ -65,8 +65,8 @@ The git server was confined to a throwaway repository outside this checkout,
 which held one empty commit and no remote:
 
 ```sh
-git init
-git -c user.name=case-study -c user.email=case-study@example.invalid commit --allow-empty -m initial
+git init /tmp/ct8b/repo
+git -C /tmp/ct8b/repo -c user.name=case-study -c user.email=case-study@example.invalid commit --allow-empty -m initial
 ```
 
 The path `/tmp/ct8b/repo` in the saved reports is that throwaway folder, created
@@ -98,8 +98,9 @@ this run.
 | mcp-server-git | 2026.11.18 | pass=23 warn=2 fail=0 not_tested=0 | 0 |
 | mcp-server-fetch | 2026.11.11 | pass=22 warn=0 fail=0 not_tested=3 | 0 |
 
-`not_tested` never changes the exit code; the exit code is `1` only when a `fail`
-result exists, and no run produced one.
+`not_tested` never changes the exit code. By default the exit code is `1` only
+when a `fail` result exists, and `--fail-on warn` makes it stricter; no run
+produced a `fail`.
 
 ## Observation about a server
 
@@ -109,19 +110,19 @@ name, for example `git_status properties[repo_path]`, `git_commit
 properties[message]` and `git_checkout properties[branch_name]`, and its 21st
 evidence entry reads `1 more not shown`, so one further property is behind the
 evidence cap. These are the properties the tool could see in the tool listing of
-one session. The saved report holds the full list.
+one session. The saved report names 20 of the 21; the 21st is not named in it.
 
 ## What this run could not test
 
-Each item is a limit of this tool, not a statement about the server.
+Each item is a limit of this run. None is a verdict on a server.
 
 | Server | Check | Limit |
 | --- | --- | --- |
 | time | CT-ROB-001 | `not_tested`: `get_current_time` and `get_time_ago` have no required property, so no wrong-type probe could be built. Reason: `no required property was available for wrong-type input`. |
 | time | CT-ROB-002 | `not_tested` for the same two tools, reason `no required property was available for missing-required input`. |
-| time | CT-ROB-005 | `warn`: the placeholder `A` was rejected by `convert_time` with `Invalid time format. Expected HH:MM [24-hour format]`. Rejecting a value that does not fit a format the schema does not state is correct behaviour. |
+| time | CT-ROB-005 | `warn`: the report shows `convert_time` answered the placeholder `A` with `Invalid time format. Expected HH:MM [24-hour format]`. This page gives no verdict on that answer. |
 | time | CT-CANARY-001 | `not_tested` as a consequence of the two `not_tested` robustness checks. |
-| git | CT-ROB-005 | `warn`: `6 tested, 2 skipped`, and all 6 answers differed because every probe sent the placeholder `A` as `repo_path`, which the server rejected. The tool has no way to invent a real repository path, so this is a probe limit. |
+| git | CT-ROB-005 | `warn`: `6 tested, 2 skipped`, and all 6 answers differed. Every probe sent the placeholder `A` as `repo_path`, and the report's evidence shows the server's rejection naming that path. The tool cannot invent a real repository path, so a placeholder is all it can send. |
 | git | CT-ROB-005 | 2 of the read-only tools were skipped with `valid input could not be generated for this tool` (`git_log` and `git_branch`). |
 | fetch | CT-ROB-004 | `not_tested`: `valid input could not be generated for a huge string`. |
 | fetch | CT-ROB-005 | `not_tested`: `valid input could not be generated for this tool` for `fetch`, whose `url` property the tool will not invent a value for. This page makes no claim about network activity. |
@@ -129,8 +130,9 @@ Each item is a limit of this tool, not a statement about the server.
 
 ## What was not run or measured
 
-- Tools with side effects were never given valid input: the tool only calls tools
-  that declare the read-only hint, and it builds its own arguments.
+- Tools that do not declare the read-only hint as true were sent only invalid
+  input; only tools that declare it true were sent valid input. The page makes no
+  claim about which tools have side effects.
 - No load, timing, memory or concurrency measurement was made. Each server was
   started once, for one session.
 - Stability was checked across a second session inside one run
