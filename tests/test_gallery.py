@@ -68,6 +68,13 @@ def _split(value: str) -> list[str]:
     return [] if value == "-" else value.split()
 
 
+def _pairs(values: set[tuple[str, str]]) -> str:
+    """Render expected or actual results as `CT-ID verdict` items."""
+    return (
+        ", ".join(f"{check} {verdict}" for check, verdict in sorted(values)) or "none"
+    )
+
+
 ROWS, PROBLEMS = _rows_and_problems()
 IDS = [
     "-".join(
@@ -80,7 +87,7 @@ IDS = [
 
 
 @pytest.mark.parametrize("row", ROWS, ids=IDS)
-def test_gallery_row(row: dict[str, str], tmp_path: Path) -> None:
+def test_gallery_row(row: dict[str, str], tmp_path: Path, capsys) -> None:
     json_path = tmp_path / "report.json"
     completed = subprocess.run(
         [
@@ -109,7 +116,14 @@ def test_gallery_row(row: dict[str, str], tmp_path: Path) -> None:
         for item in report["results"]
         if item["verdict"] in ("warn", "fail")
     }
-    assert actual == _expected(row)
+    expected = _expected(row)
+    state = "OK" if actual == expected else "MISMATCH"
+    with capsys.disabled():
+        print(
+            f"gallery: {row['Fixture']} | expected {_pairs(expected)}"
+            f" | got {_pairs(actual)} | {state}"
+        )
+    assert actual == expected
 
 
 def test_every_bad_fixture_is_in_the_gallery() -> None:
